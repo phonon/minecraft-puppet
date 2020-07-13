@@ -105,7 +105,7 @@ public class AnimationTrack(
             }
         }
 
-        // add 1 to length because keyframe convention starts at 0
+        // add 1 to length because ticks endpoints are inclusive
         this.length = 1 + lastKeyframeTick - firstKeyframeTick
 
         // form sampled transform tracks for each bone
@@ -124,98 +124,6 @@ public class AnimationTrack(
             
             this.transformTracks.put(boneName, TransformTrack(positionTrack, quaternionTrack))
         }
-
-        // for ( (trackName, keyframeList) in keyframesInput.entries ) {
-        //     val targetPropertyParts: List<String> = trackName.split(".")
-        //     if ( targetPropertyParts.size < 3 ) {
-        //         continue
-        //     }
-
-        //     val boneName: String = targetPropertyParts[0]
-
-        //     // mark bone to be transformed
-        //     bonesToTransform.add(boneName)
-
-        //     // sort keyframe list by time (just in case)
-        //     val sortedKeyframeList = keyframeList.sortedBy { it.tick }
-        //     this.keyframes.put(trackName, sortedKeyframeList)
-
-        //     // get last keyframe and update tick
-        //     val lastKeyframe = sortedKeyframeList.lastOrNull()
-        //     if ( lastKeyframe !== null ) {
-        //         lastKeyframeTick = if ( lastKeyframe.tick > lastKeyframeTick ) {
-        //             lastKeyframe.tick
-        //         } else {
-        //             lastKeyframeTick
-        //         }
-        //     }
-        // }
-
-        // // set animation length
-        // this.length = lastKeyframeTick
-
-        // // for each bone, add transform tracks
-        // for ( boneName in bonesToTransform ) {
-
-        //     // get all bone transform properties
-        //     val bonePosX = "${boneName}.position.x"
-        //     val bonePosY = "${boneName}.position.y"
-        //     val bonePosZ = "${boneName}.position.z"
-        //     val boneQuatX = "${boneName}.quaternion.x"
-        //     val boneQuatY = "${boneName}.quaternion.y"
-        //     val boneQuatZ = "${boneName}.quaternion.z"
-        //     val boneQuatW = "${boneName}.quaternion.w"
-            
-        //     // position keyframes: can sample components separately
-        //     val keyframesPosX = this.keyframes.get(bonePosX)
-        //     val keyframesPosY = this.keyframes.get(bonePosY)
-        //     val keyframesPosZ = this.keyframes.get(bonePosZ)
-
-        //     val positionTrack: FloatArray? = if (
-        //         keyframesPosX !== null ||
-        //         keyframesPosY !== null ||
-        //         keyframesPosZ !== null
-        //     ) {
-        //         val buffer = FloatArray(this.length * 3, { 0f })
-        //         keyframesPosX?.let { keys -> sampleKeyframesIntoBuffer(keys, buffer, this.length, 3, 0) }
-        //         keyframesPosY?.let { keys -> sampleKeyframesIntoBuffer(keys, buffer, this.length, 3, 1) }
-        //         keyframesPosZ?.let { keys -> sampleKeyframesIntoBuffer(keys, buffer, this.length, 3, 2) }
-        //         buffer
-        //     } else {
-        //         null
-        //     }
-
-        //     // quaternion keyframes: merge components into Quaternion keyframes
-        //     // in form (tick, Quaternion, INTERPOLATION) so we can slerp
-        //     var keyframesQuatX = this.keyframes.get(boneQuatX)
-        //     var keyframesQuatY = this.keyframes.get(boneQuatY)
-        //     var keyframesQuatZ = this.keyframes.get(boneQuatZ)
-        //     var keyframesQuatW = this.keyframes.get(boneQuatW)
-
-        //     val quaternionTrack: FloatArray? = if (
-        //         keyframesQuatX !== null ||
-        //         keyframesQuatY !== null ||
-        //         keyframesQuatZ !== null ||
-        //         keyframesQuatW !== null
-        //     ) {
-        //         val buffer = FloatArray(this.length * 4, { i -> if ( (i+1) % 4 == 0 ) 1f else 0f })
-                
-        //         keyframesQuatX = keyframesQuatX ?: listOf(Keyframe<Double>(0, 0.0, Interpolation.LINEAR))
-        //         keyframesQuatY = keyframesQuatY ?: listOf(Keyframe<Double>(0, 0.0, Interpolation.LINEAR))
-        //         keyframesQuatZ = keyframesQuatZ ?: listOf(Keyframe<Double>(0, 0.0, Interpolation.LINEAR))
-        //         keyframesQuatW = keyframesQuatW ?: listOf(Keyframe<Double>(0, 1.0, Interpolation.LINEAR))
-                
-        //         val quaternionKeyframes = formQuaternionKeyframes(keyframesQuatX, keyframesQuatY, keyframesQuatZ, keyframesQuatW)
-                
-        //         sampleQuaternionKeyframesIntoBuffer(quaternionKeyframes, buffer, this.length)
-
-        //         buffer
-        //     } else {
-        //         null
-        //     }
-
-        //     this.transformTracks.put(boneName, TransformTrack(positionTrack, quaternionTrack))
-        // }
     }
     
     /**
@@ -294,7 +202,7 @@ public class AnimationTrack(
 }
 
 
-
+// DEPRECATED
 // merge component keyframes into Quaternion object keyframes
 // ASSUME all components have keyframes at same points in time
 // so, use keyframesX as reference for iterating

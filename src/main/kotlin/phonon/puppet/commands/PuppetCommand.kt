@@ -23,10 +23,13 @@ import phonon.puppet.utils.filterByStart
 private val SUBCOMMANDS: List<String> = listOf(
     "help",
     "reload",
+    "actor",
+    "create",
+    "kill",
+    "killall",
+    "list",
     "models",
     "mesh",
-    "actor",
-    "list",
     "bone",
     "pose",
     "stands",
@@ -34,7 +37,18 @@ private val SUBCOMMANDS: List<String> = listOf(
     "animlist",
     "playanim",
     "stopanim",
+    "start",
+    "stop",
+    "step",
+    "reset",
     "engine"
+)
+
+// /puppet engine [subcommand]
+private val ENGINE_SUBCOMMANDS: List<String> = listOf(
+    "start",
+    "stop",
+    "step"
 )
 
 public class PuppetCommand : CommandExecutor, TabCompleter {
@@ -53,11 +67,13 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
         when ( args[0].toLowerCase() ) {
             "help" -> printHelp(sender)
             "reload" -> reload(sender)
-            "resourcepack" -> reloadResources(sender)
+            "actor" -> actorInfo(sender, args)
+            "create" -> createActor(sender, args)
+            "kill" -> killActor(sender, args)
+            "killall" -> killAllActor(sender, args)
+            "list" -> listActors(sender, args)
             "models" -> printModels(sender)
             "mesh" -> createMesh(player, args)
-            "actor" -> createActor(sender, args)
-            "list" -> listActors(sender, args)
             "bone" -> setBone(sender, args)
             "pose" -> poseActor(sender, args)
             "stands" -> toggleArmorStands(sender, args)
@@ -65,10 +81,12 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
             "animlist" -> listAnimations(sender, args)
             "playanim" -> playAnimation(sender, args)
             "stopanim" -> stopAnimation(sender, args)
-            "start" -> startEngine()
-            "stop" -> stopEngine()
-            "step" -> stepEngine()
-            else -> { println("Invalid command, use /puppet help") }
+            "start" -> startActorAnimation(sender, args)
+            "stop" -> stopActorAnimation(sender, args)
+            "step" -> stepActorAnimation(sender, args)
+            "reset" -> resetActorPose(sender, args)
+            "engine" -> manageEngine(sender, args)
+            else -> { Message.error(sender, "Invalid command, use \"/puppet help\"") }
         }
 
         return true
@@ -100,12 +118,22 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
                         return filterByStart(AnimationTrack.list(), args[2])
                     }
                 }
+
+                // /puppet engine [subcommand]
+                "engine" -> {
+                    if ( args.size == 2 ) {
+                        return filterByStart(ENGINE_SUBCOMMANDS, args[1])
+                    }
+                }
             }
         }
 
         return listOf()
     }
 
+    /**
+     * Print engine info
+     */
     private fun printInfo(sender: CommandSender?) {
         Message.print(sender, "${ChatColor.BOLD}Puppet Animation Engine v${Puppet.version}")
         Message.print(sender, "Library:")
@@ -116,6 +144,9 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
         return
     }
 
+    /**
+     * Print commands help
+     */
     private fun printHelp(sender: CommandSender?) {
         Message.print(sender, "[Puppet] Commands:")
         Message.print(sender, "/puppet reload${ChatColor.WHITE}: Reload libraries and re-create resourcepack")
@@ -123,11 +154,12 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
     }
 
     /**
-    * @command /puppet reload
-    * Reloads plugin.
-    */
+     * @command /puppet reload
+     * Reloads plugin and re-creates resourcepack.
+     * Will add any new resources to engine.
+     */
     private fun reload(sender: CommandSender?) {
-        Message.print(sender, "[Puppet] Reloading resources...")
+        Message.print(sender, "[Puppet] Reloading resources and creating resource pack...")
         
         Puppet.loadResources()
 
@@ -135,16 +167,75 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
         Message.print(sender, "- Skeletons: ${Skeleton.library.size}")
         Message.print(sender, "- Animations: ${AnimationTrack.library.size}")
     }
-
+    
     /**
-     * @command /puppet resourcepack
-     * Reloads resources and re-generates resource pack.
-     * Will add any new resources to engine.
+     * 
      */
-    private fun reloadResources(sender: CommandSender) {
-        Message.print(sender, "[Puppet] Generating Resource Pack")
+    private fun actorInfo(sender: CommandSender, args: Array<String>) {
+        // no actor id input, see if player is looking at actor
+        if ( args.size < 2 ) {
+            val player = if ( sender is Player ) sender else null
+            if ( player !== null ) {
+                val actor = Puppet.getActorPlayerIsLookingAt(player)
+                if ( actor !== null ) {
+                    Message.print(player, "ACTOR: ${actor}")
+                    return
+                }
+                Message.error(sender, "No actor in sight")
+            }
+
+            Message.error(sender, "Usage: /puppet actor: info for actor player is looking at")
+            Message.error(sender, "Usage: /puppet actor [id]: info for actor id")
+            return
+        }
     }
 
+    /**
+     * 
+     */
+    private fun createActor(sender: CommandSender, args: Array<String>) {
+        if ( args.size < 2 ) {
+            Message.print(sender, "Usage: /puppet actor [name]")
+            return
+        }
+
+        val player = if ( sender is Player ) sender else null
+
+        val spawnLocation = if ( player === null ) {
+            Vector3f.zero()
+        } else {
+            Vector3f.fromLocation(player.location)
+        }
+
+        val type = args[1]
+        Puppet.createActor(type, spawnLocation)
+
+        Message.print(sender, "CREATING ACTOR ${type} at ${spawnLocation}")
+    }
+    
+    /**
+     * 
+     */
+    private fun killActor(sender: CommandSender, args: Array<String>) {
+        
+    }
+
+    /**
+     * 
+     */
+    private fun killAllActor(sender: CommandSender, args: Array<String>) {
+        
+    }
+    
+    /**
+     * 
+     */
+    private fun listActors(sender: CommandSender, args: Array<String>) {
+        for ( (id, actor) in Actor.actors ) {
+            Message.print(sender, "- ${id}: ${actor.name}")
+        }
+    }
+    
     // print list of custom model data
     private fun printModels(sender: CommandSender?) {
         if ( sender !== null ) {
@@ -168,32 +259,6 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
         val meshName = args[1]
         val spawnLocation = Vector3f.fromLocation(player.location)
         Puppet.createMesh(meshName, spawnLocation)
-    }
-    
-    private fun createActor(sender: CommandSender, args: Array<String>) {
-        if ( args.size < 2 ) {
-            Message.print(sender, "Usage: /puppet actor [name]")
-            return
-        }
-
-        val player = if ( sender is Player ) sender else null
-
-        val spawnLocation = if ( player === null ) {
-            Vector3f.zero()
-        } else {
-            Vector3f.fromLocation(player.location)
-        }
-
-        val type = args[1]
-        Puppet.createActor(type, spawnLocation)
-
-        Message.print(sender, "CREATING ACTOR ${type} at ${spawnLocation}")
-    }
-
-    private fun listActors(sender: CommandSender, args: Array<String>) {
-        for ( (id, actor) in Actor.actors ) {
-            Message.print(sender, "- ${id}: ${actor.name}")
-        }
     }
 
     private fun setBone(sender: CommandSender, args: Array<String>) {
@@ -225,7 +290,6 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
             return
         }
         
-        // 
         val rotX = args[3].toDouble()
         val rotY = args[4].toDouble()
         val rotZ = args[5].toDouble()
@@ -365,16 +429,52 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
 
     }
 
-    private fun startEngine() {
-        Puppet.startEngine()
+    private fun startActorAnimation(sender: CommandSender, args: Array<String>) {
+        
     }
 
-    private fun stopEngine() {
-        Puppet.stopEngine()
+    private fun stopActorAnimation(sender: CommandSender, args: Array<String>) {
+        
     }
 
-    private fun stepEngine() {
-        Puppet.stepEngine()
+    private fun stepActorAnimation(sender: CommandSender, args: Array<String>) {
+        
+    }
+
+    private fun resetActorPose(sender: CommandSender, args: Array<String>) {
+
+    }
+
+    /**
+     * @command /puppet engine
+     * Start/stop/step animation render loop engine.
+     */
+    private fun manageEngine(sender: CommandSender, args: Array<String>) {
+        if ( args.size < 2 ) {
+            val engineStatus = if ( Puppet.isRunning ) {
+                "${ChatColor.GREEN}running"
+            } else {
+                "${ChatColor.GRAY}stopped"
+            }
+            Message.print(sender, "Engine status: ${engineStatus}")
+            Message.print(sender, "Usage: /puppet engine [start|stop|step]")
+            return
+        }
+
+        when ( args[1].toLowerCase() ) {
+            "start" -> {
+                Puppet.startEngine()
+                Message.print(sender, "${ChatColor.BOLD}Starting Puppet render engine")
+            }
+            "stop" -> {
+                Puppet.stopEngine()
+                Message.print(sender, "${ChatColor.BOLD}Stopping Puppet render engine")
+            }
+            "step" -> {
+                Puppet.stepEngine()
+                Message.print(sender, "${ChatColor.BOLD}Step Puppet render engine")
+            }
+        }
     }
     
 }

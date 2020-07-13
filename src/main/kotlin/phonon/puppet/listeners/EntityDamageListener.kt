@@ -1,6 +1,5 @@
 /**
- * Handles all events for creating/deleting
- * player town name tags
+ * Handle cancelling damage on actor ArmorStand entities.
  */
 
 package phonon.puppet.listeners
@@ -11,13 +10,17 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.entity.EntityType
+import phonon.puppet.Puppet
 
 public class EntityDamageListener: Listener {
 
     @EventHandler
     public fun onEntityDamage(event: EntityDamageEvent) {
-        if ( event.entity.type == EntityType.ARMOR_STAND ) {
-            event.setCancelled(true)
+        val entity = event.entity
+        if ( entity.type == EntityType.ARMOR_STAND ) {
+            if ( Puppet.getActorFromEntity(entity) !== null ) {
+                event.setCancelled(true)
+            }
         }
     }
 

@@ -6,31 +6,19 @@ package phonon.puppet
 
 import java.util.EnumMap
 import java.util.UUID
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.logging.Logger
 import org.bukkit.plugin.java.JavaPlugin
-import org.bukkit.ChatColor
+import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
+import org.bukkit.entity.EntityType
 import org.bukkit.Bukkit
-import org.bukkit.Chunk
 import org.bukkit.World
 import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.entity.EntityType
-import org.bukkit.entity.ArmorStand
-import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.EntityEquipment
-import org.bukkit.util.Vector
-import org.bukkit.util.EulerAngle 
 import org.bukkit.scheduler.BukkitTask
 import phonon.puppet.math.*
 import phonon.puppet.objects.*
 import phonon.puppet.animation.AnimationTrack
 import phonon.puppet.resourcepack.Resource
-import phonon.puppet.serdes.Serdes
-import phonon.puppet.utils.file.listFilesInDir
 
 public object Puppet {
 
@@ -48,9 +36,12 @@ public object Puppet {
     // actors
     internal val actors: LinkedHashMap<UUID, Actor> = LinkedHashMap()
     
+    // map minecraft entity -> actor object
+    internal val entityToMesh: HashMap<Entity, Actor> = hashMapOf()
+    
     // all renderable meshes
     internal val renderable: ArrayList<Mesh> = arrayListOf()
-    
+
     // players posing actors by body movement
     internal val playerPosingActor: HashMap<Player, Actor> = hashMapOf()
 
@@ -94,12 +85,16 @@ public object Puppet {
         }        
     }
 
-    // add renderable object
+    /**
+     * Add renderable mesh object
+     */
     public fun addRenderable(mesh: Mesh) {
         Puppet.renderable.add(mesh)
     }
 
-    // remove renderable object
+    /**
+     * Remove renderable mesh object
+     */
     public fun removeRenderable(mesh: Mesh) {
         Puppet.renderable.remove(mesh)
     }
@@ -120,7 +115,9 @@ public object Puppet {
         Puppet.actors.put(actor.uuid, actor)
     }
 
-    // create actor from skeleton
+    /**
+     * Create actor from skeleton
+     */
     public fun createActor(type: String, location: Vector3f): Result<Actor> {
         // create skeleton if it exists
         val skeleton: Skeleton? = Skeleton.create(type)
@@ -158,6 +155,9 @@ public object Puppet {
                 // link to actor
                 actor.add(mesh)
 
+                // link armor stand -> actor
+                Puppet.entityToMesh.put(mesh.armorStand, actor)
+
                 // link to bone
                 bone.mesh = mesh
             }
@@ -187,6 +187,37 @@ public object Puppet {
         // TODO
     }
 
+    /**
+     * Return actor associated with an Entity
+     * @param entity entity (should be an ArmorStand)
+     */
+    public fun getActorFromEntity(entity: Entity): Actor? {
+        return Puppet.entityToMesh.get(entity)
+    }
+
+    /**
+     * Get first actor player is currently looking at.
+     * Uses raycast to check entities player is viewing.
+     * @param player player source
+     * @param maxDistance max distance of raycast
+     */
+    public fun getActorPlayerIsLookingAt(player: Player, maxDistance: Double = 10.0): Actor? {
+        val start = player.getEyeLocation()
+        val direction = start.direction
+        val raySize: Double = 0.0
+        val filter = { e: Entity -> e.getType() == EntityType.ARMOR_STAND }
+
+        val raytraceResult = player.world.rayTraceEntities(start, direction, maxDistance, raySize, filter)
+        val entityHit = raytraceResult?.getHitEntity()
+        println(entityHit)
+
+        if ( entityHit !== null ) {
+            return Puppet.getActorFromEntity(entityHit)
+        } else {
+            return null
+        }
+    }
+
     public fun toggleArmorStands(obj: GraphNode, visible: Boolean) {
         if ( obj is Mesh ) {
             obj.armorStand.setVisible(visible)
@@ -197,7 +228,9 @@ public object Puppet {
         }
     }
 
-    // run render loop every tick
+    /**
+     * Starts render loop engine, updates/renders models every tick.
+     */
     public fun startEngine() {
         if ( Puppet._task === null ) {
             Puppet._task = Bukkit.getScheduler().runTaskTimer(Puppet.plugin!!, object: Runnable {
@@ -214,7 +247,9 @@ public object Puppet {
         }
     }
 
-    // stop running render loop
+    /**
+     * Stop render loop engine.
+     */
     public fun stopEngine() {
         if ( Puppet._task !== null ) {
             Puppet._task!!.cancel()
@@ -227,12 +262,16 @@ public object Puppet {
         }
     }
 
-    // run one render iteration
+    /**
+     * Run one render iteration.
+     */
     public fun stepEngine() {
         render()
     }
 
-    // render function
+    /**
+     * Transform/animation update + render all actors/meshes.
+     */
     public fun render() {
         // update actors
         for ( actor in Puppet.actors.values ) {

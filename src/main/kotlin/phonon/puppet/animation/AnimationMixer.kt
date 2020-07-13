@@ -1,6 +1,7 @@
 /**
- * Play and mix together different animation tracks
- * (through their AnimationAction controllers).
+ * Play and mix together different animation tracks.
+ * Manager for multiple AnimationAction.
+ * To animate an actor it should have a Skeleton + AnimationMixer.
  */
 
 package phonon.puppet.animation
