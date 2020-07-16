@@ -42,11 +42,11 @@ public class Mesh(
     initialPosition: Vector3f,
     initialRotation: Euler,
     initialMatrix: Matrix4f? = null  // takes priority over initial position, rotation
-): GraphNode {
+): TransformGraphNode {
 
     // scene graph
-    override var parent: GraphNode? = null
-    override val children: ArrayList<GraphNode> = arrayListOf()
+    override var parent: TransformGraphNode? = null
+    override val children: ArrayList<TransformGraphNode> = arrayListOf()
 
     // transform
     override val matrix: Matrix4f = Matrix4f.identity()
@@ -118,9 +118,6 @@ public class Mesh(
         this.armorStand = stand
         this._locationBuffer = loc // re-use location as buffer
 
-        // register with global list of all renderable meshes
-        Puppet.addRenderable(this)
-
         // perform initial render to set armorstand state
         this.render()
     }
@@ -147,6 +144,17 @@ public class Mesh(
         fun build() = Mesh(this._name, this._world, this._model, this._customModelData, this._position, this._rotation, this._matrix)
     }
 
+    /**
+     * Cleanup armor stands, cleanup tree
+     */
+    override public fun destroy() {
+        for ( child in this.children ) {
+            child.destroy()
+        }
+
+        this.armorStand.remove()
+    }
+
     // update world transform
     override public fun updateTransform() {
         // update local transform
@@ -167,14 +175,15 @@ public class Mesh(
         }
     }
 
-    // render state into attached armor stand
-    // must convert rotation extrinsic euler (x, y, z) -> intrinsic (pitch, yaw, roll)
-    // 
-    // Minecraft armor stand head rotation order: R = Rx Ry Rz
-    // First z-rotation, then y-, then x- rotations applied
-    //
-    // R is our world-space rotation matrix, we must solve for Rx, Ry, Rz
-    // 
+    /**
+     * Render state into attached armor stand.
+     * Must convert rotation extrinsic euler (x, y, z) -> intrinsic (pitch, yaw, roll)
+     * 
+     * Minecraft armor stand head rotation order: R = Rx Ry Rz
+     * First z-rotation, then y-, then x- rotations applied
+     *
+     * R is our world-space rotation matrix, we must solve for Rx, Ry, Rz
+     */
     public fun render() {
         // rotate the normally upright armor stand offset vector
         val armorStandOffset = Vector3f(0f, ARMOR_STAND_OFFSET, 0f).applyRotationMatrix4(this.worldMatrix)
@@ -235,9 +244,16 @@ public class Mesh(
         }
 
         /**
+         * Return if library has given model type
+         * @param type name of model type
+         */
+        fun has(type: String): Boolean {
+            return Mesh.library.contains(type)
+        }
+
+        /**
          * Return custom model data index
-         * 
-         * @param name model name
+         * @param type model name
          */
         fun get(name: String): Int? {
             return Mesh.library.get(name)
@@ -245,7 +261,6 @@ public class Mesh(
 
         /**
          * Print list of library custom models
-         * 
          * @param p target to print messages to
          */
         fun print(p: CommandSender) {

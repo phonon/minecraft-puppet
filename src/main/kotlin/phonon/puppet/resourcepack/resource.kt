@@ -150,9 +150,9 @@ public object Resource {
         try {
             val json = StringBuilder()
 
-            json.append("{\n  \"models\": [")
+            json.append("{\n  \"models\": [\n")
             for ( (i, s) in customModelData.withIndex() ) {
-                json.append("    \"${s}\"")
+                json.append("    \"${s}\"\n")
                 if ( i < customModelData.size - 1 ) {
                     json.append(",")
                 }

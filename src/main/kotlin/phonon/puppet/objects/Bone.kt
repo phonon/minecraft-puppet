@@ -12,11 +12,11 @@ public class Bone(
     val name: String,
     val boneMatrix: Matrix4f,
     val boneMatrixWorld: Matrix4f, // bind pose
-    override var parent: GraphNode? = null
-): GraphNode {
+    override var parent: TransformGraphNode? = null
+): TransformGraphNode {
 
     // scene graph
-    override val children: ArrayList<GraphNode> = arrayListOf()
+    override val children: ArrayList<TransformGraphNode> = arrayListOf()
 
     // transform
     override val matrix: Matrix4f = Matrix4f.identity()
@@ -66,6 +66,12 @@ public class Bone(
         this.bindQuaternion = this.quaternion.clone()
     }
 
+    /**
+     * Assume no cleanup needed in bone tree.
+     * (Assume no non-bone objects in bone trees)
+     */
+    override public fun destroy() {}
+    
     // update world transform
     override public fun updateTransform() {
         // update local transform

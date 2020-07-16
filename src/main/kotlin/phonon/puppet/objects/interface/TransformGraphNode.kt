@@ -4,13 +4,16 @@
 
 package phonon.puppet.objects
 
-interface GraphNode: Transform {
-    var parent: GraphNode?
-    val children: ArrayList<GraphNode>
+interface TransformGraphNode: Transform {
+    var parent: TransformGraphNode?
+    val children: ArrayList<TransformGraphNode>
+
+    // cleanup self
+    fun destroy()
 
     // add an graph node as a child
     // This will overwrite the existing parent of the obj
-    fun add(obj: GraphNode) {
+    fun add(obj: TransformGraphNode) {
         // make sure not already contained
         for ( child in this.children ) {
             if ( obj === child ) {
@@ -24,7 +27,7 @@ interface GraphNode: Transform {
     }
 
     // remove a child
-    fun remove(obj: GraphNode) {
+    fun remove(obj: TransformGraphNode) {
         for ( (i, child) in this.children.withIndex() ) {
             if ( obj === child ) {
                 // remove link
@@ -32,6 +35,18 @@ interface GraphNode: Transform {
                 obj.parent = null
                 return
             }
+        }
+    }
+
+    /**
+     * Run function on every child recursively.
+     * Function takes this object as input.
+     */
+    fun traverse(fn: (TransformGraphNode) -> Unit) {
+        fn(this)
+        
+        for ( child in this.children ) {
+            child.traverse(fn)
         }
     }
 }

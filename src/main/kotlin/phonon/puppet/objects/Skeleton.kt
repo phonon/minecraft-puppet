@@ -31,7 +31,7 @@ public class Skeleton(
     // create deep clone of this skeleton
     public fun clone(): Skeleton {
         // recursive deep clone
-        fun cloneBone(parent: GraphNode?, bone: Bone): Bone {
+        fun cloneBone(parent: TransformGraphNode?, bone: Bone): Bone {
             val boneCopy = Bone(
                 bone.name,
                 bone.boneMatrix,

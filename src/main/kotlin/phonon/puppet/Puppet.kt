@@ -7,14 +7,16 @@ package phonon.puppet
 import java.util.EnumMap
 import java.util.UUID
 import java.util.logging.Logger
+import org.bukkit.Bukkit
+import org.bukkit.World
+import org.bukkit.Location
+import org.bukkit.ChatColor
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.entity.EntityType
-import org.bukkit.Bukkit
-import org.bukkit.World
-import org.bukkit.Location
 import org.bukkit.scheduler.BukkitTask
+import org.bukkit.command.CommandSender
 import phonon.puppet.math.*
 import phonon.puppet.objects.*
 import phonon.puppet.animation.AnimationTrack
@@ -33,17 +35,21 @@ public object Puppet {
     private var _task: BukkitTask? = null
     public var isRunning: Boolean = false
 
-    // actors
-    internal val actors: LinkedHashMap<UUID, Actor> = LinkedHashMap()
-    
+    // link actor name -> actor for access
+    // name should be unique, but must be enforced by writer
+    public val actors: LinkedHashMap<String, Actor> = LinkedHashMap()
+
+    // actors stored by UUID
+    public val actorsById: LinkedHashMap<UUID, Actor> = LinkedHashMap()
+
     // map minecraft entity -> actor object
-    internal val entityToMesh: HashMap<Entity, Actor> = hashMapOf()
+    public val entityToActor: HashMap<Entity, Actor> = hashMapOf()
     
     // all renderable meshes
-    internal val renderable: ArrayList<Mesh> = arrayListOf()
+    public val renderable: ArrayList<Mesh> = arrayListOf()
 
     // players posing actors by body movement
-    internal val playerPosingActor: HashMap<Player, Actor> = hashMapOf()
+    public val playerPosingActor: HashMap<Player, Actor> = hashMapOf()
 
     // initialization:
     // - set links to plugin variables
@@ -64,6 +70,7 @@ public object Puppet {
         if ( cleanExisting ) {
             Mesh.clear()
             Skeleton.clear()
+            Actor.clear()
             AnimationTrack.clear()
         }
 
@@ -78,58 +85,95 @@ public object Puppet {
 
         for ( skeleton in skeletons ) {
             Skeleton.save(skeleton)
+            
+            // also create actor prototypes assuming each skeleton
+            // is associated with a mesh group with same name
+            val actorType = ActorPrototype(skeleton.name, skeleton.name)
+            Actor.save(skeleton.name, actorType)
         }
 
         for ( animTrack in animations ) {
             AnimationTrack.save(animTrack)
-        }        
+        }
     }
 
     /**
-     * Add renderable mesh object
+     * Print engine info to target
      */
-    public fun addRenderable(mesh: Mesh) {
-        Puppet.renderable.add(mesh)
+    public fun printInfo(target: CommandSender) {
+        Message.print(target, "${ChatColor.BOLD}Puppet Animation Engine v${Puppet.version}")
+        Message.print(target, "Library:")
+        Message.print(target, "- Models: ${Mesh.library.size}")
+        Message.print(target, "- Skeletons: ${Skeleton.library.size}")
+        Message.print(target, "- Animations: ${AnimationTrack.library.size}")
     }
+
+    // =====================================
+    // Actor commands
+    // =====================================
 
     /**
-     * Remove renderable mesh object
+     * Create actor with single mesh model.
      */
-    public fun removeRenderable(mesh: Mesh) {
-        Puppet.renderable.remove(mesh)
-    }
+    public fun createMeshAtLocation(meshType: String, location: Location): Result<Actor> {
+        if ( !Mesh.has(meshType) ) {
+            return Result.failure(Exception("Mesh type does not exist"))
+        }
 
-    public fun createMesh(type: String, location: Vector3f) {
-        val actor = Actor.create("mesh")
+        val actorName = Puppet.generateActorName(meshType)
+
+        val actor = Actor.Builder()
+            .name(actorName)
+            .position(location.x, location.y, location.z)
+            .build()
 
         val mesh = Mesh.Builder()
             .name("mesh")
-            .model(type)
+            .model(meshType)
             .position(0.0, 0.0, 0.0)
             .rotation(0.0, 0.0, 0.0)
             .build()
         
         actor.add(mesh)
-        actor.position.copy(location)
         actor.updateTransform()
-        Puppet.actors.put(actor.uuid, actor)
+        actor.render()
+
+        Puppet.registerActor(actor)
+
+        return Result.success(actor)
     }
 
     /**
-     * Create actor from skeleton
+     * Create actor from ActorPrototype type string at given location.
      */
-    public fun createActor(type: String, location: Vector3f): Result<Actor> {
+    public fun createActorAtLocation(type: String, location: Location): Result<Actor> {
+        // check if actor prototype exists
+        val actorType = Actor.get(type)
+        if ( actorType === null ) {
+            return Result.failure(Exception("Skeleton does not exist"))
+        }
+
+        val (modelName, skeletonName) = actorType
+
         // create skeleton if it exists
-        val skeleton: Skeleton? = Skeleton.create(type)
-        
+        val skeleton: Skeleton? = Skeleton.create(skeletonName)
         if ( skeleton === null ) {
             return Result.failure(Exception("Skeleton does not exist"))
         }
 
-        val actor = Actor.create("actor")
+        // get actor name
+        val actorName = Puppet.generateActorName(type)
 
-        // create parallel mesh hierarchy
-        // create meshes as children of bones in skeleton
+        // create actor
+        val actor = Actor.Builder()
+            .name(actorName)
+            .skeleton(skeleton)
+            .position(location.x, location.y, location.z)
+            .build()
+
+        // build meshes
+        // 1. attach mesh directly as child of actor (for global transforms)
+        // 2. attach mesh to its bone
         fun linkMeshToBone(bone: Bone) {
             // first iterate children
             for ( child in bone.children ) {
@@ -139,7 +183,7 @@ public object Puppet {
             }
 
             // create mesh and link to bone (after finishing children)
-            val meshName = "${type}.${bone.name}"
+            val meshName = "${modelName}.${bone.name}"
             val customModelData = Mesh.get(meshName)
             if ( customModelData !== null ) {
 
@@ -155,9 +199,6 @@ public object Puppet {
                 // link to actor
                 actor.add(mesh)
 
-                // link armor stand -> actor
-                Puppet.entityToMesh.put(mesh.armorStand, actor)
-
                 // link to bone
                 bone.mesh = mesh
             }
@@ -165,26 +206,92 @@ public object Puppet {
 
         linkMeshToBone(skeleton.root)
 
-        actor.skeleton = skeleton
-        actor.position.copy(location)
         actor.updateTransform()
-        Puppet.actors.put(actor.uuid, actor)
+        actor.render()
+
+        Puppet.registerActor(actor)
 
         return Result.success(actor)
     }
 
     /**
-     * TODO
+     * Register actor with Puppet engine
      */
-    public fun createActorAtEntity() {
-        // TODO
+    public fun registerActor(actor: Actor) {
+        Puppet.actors.put(actor.name, actor)
+        Puppet.actorsById.put(actor.uuid, actor)
+
+        // process actor tree
+        actor.traverse({ obj -> 
+            if ( obj is Mesh ) {
+                // add mesh links
+                Puppet.renderable.add(obj)
+                Puppet.entityToActor.put(obj.armorStand, actor)
+            }
+        })
     }
 
     /**
-     * TODO
+     * Remove actor and cleanup its components
      */
-    public fun createActorAtLocation() {
-        // TODO
+    public fun destroyActor(actor: Actor): Boolean {
+        // manually process actor tree instead of using actor.destroy()
+        actor.traverse({ obj -> 
+            if ( obj is Mesh ) {
+                // remove armor stand from world
+                obj.armorStand.remove()
+
+                // remove mesh links
+                Puppet.renderable.remove(obj)
+                Puppet.entityToActor.remove(obj.armorStand, actor)
+            }
+        })
+        
+        Puppet.actors.remove(actor.name)
+        Puppet.actorsById.remove(actor.uuid)
+
+        // remove player posing actor reference
+        for ( (player, posingActor) in Puppet.playerPosingActor.entries.toList() ) {
+            if ( posingActor === actor ) {
+                Puppet.playerPosingActor.remove(player)
+                break
+            }
+        }
+        
+        return true
+    }
+
+    /**
+     * Remove all actors currently in engine
+     */
+    public fun destroyAllActors() {
+        val actors = Puppet.actors.values.toList()
+        for ( a in actors ) {
+            Puppet.destroyActor(a)
+        }
+    }
+
+    /**
+     * Returns list of actor names
+     */
+    public fun getActorNames(): List<String> {
+        return Puppet.actors.keys.toList()
+    }
+
+    /**
+     * Return actor from name if it exists.
+     * Returns null if it does not exist.
+     */
+    public fun getActor(name: String): Actor? {
+        return Puppet.actors.get(name)
+    }
+
+    /**
+     * Return actor from UUID if it exists.
+     * Returns null if it does not exist.
+     */
+    public fun getActorById(uuid: UUID): Actor? {
+        return Puppet.actorsById.get(uuid)
     }
 
     /**
@@ -192,7 +299,7 @@ public object Puppet {
      * @param entity entity (should be an ArmorStand)
      */
     public fun getActorFromEntity(entity: Entity): Actor? {
-        return Puppet.entityToMesh.get(entity)
+        return Puppet.entityToActor.get(entity)
     }
 
     /**
@@ -218,15 +325,51 @@ public object Puppet {
         }
     }
 
-    public fun toggleArmorStands(obj: GraphNode, visible: Boolean) {
-        if ( obj is Mesh ) {
-            obj.armorStand.setVisible(visible)
-        }
-
-        for ( child in obj.children ) {
-            Puppet.toggleArmorStands(child, visible)
-        }
+    /**
+     * Toggle visibility of armor stands in an transform tree
+     * that may contain Mesh objects.
+     */
+    public fun toggleArmorStands(obj: TransformGraphNode, visible: Boolean) {
+        obj.traverse({
+            if ( obj is Mesh ) {
+                obj.armorStand.setVisible(visible)
+            }
+        })
     }
+
+    /**
+     * Generate unique actor name based on input type string,
+     * in format "typeN", where N is an integer. It will
+     * generate in order N = 0, 1, ... until the first unused
+     * number is found, i.e. "actor0", "actor1", ...
+     */
+    public fun generateActorName(type: String): String {
+        var i = 0
+        var name = "${type}${i}"
+        while ( Puppet.actors.contains(name) ) {
+            i = i + 1
+            name = "${type}${i}"
+        }
+        return name
+    }
+
+    /**
+     * Add renderable mesh object
+     */
+    public fun addRenderable(mesh: Mesh) {
+        Puppet.renderable.add(mesh)
+    }
+
+    /**
+     * Remove renderable mesh object
+     */
+    public fun removeRenderable(mesh: Mesh) {
+        Puppet.renderable.remove(mesh)
+    }
+
+    // =====================================
+    // Engine commands
+    // =====================================
 
     /**
      * Starts render loop engine, updates/renders models every tick.

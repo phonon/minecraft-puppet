@@ -28,7 +28,7 @@ public fun loadSkeletonAnimationFromJson(path: Path): BoneAnimationData {
         }
 
         // load skeleton
-        val jsonBoneRoot = jsonObj.get("skeleton")?.getAsJsonObject()
+        val jsonBoneRoot = jsonObj.get("bones")?.getAsJsonObject()
         val skeleton: List<Skeleton> = if ( jsonBoneRoot !== null ) {
             // root bone
             val rootName = jsonBoneRoot.get("name")!!.getAsString();
@@ -132,13 +132,13 @@ internal fun parseBoneNode(parent: Bone, current: JsonElement) {
     val jsonMatrix: List<Float> = jsonBoneNode.get("matrix")!!.getAsJsonArray().map {
         elem -> elem.getAsFloat()
     }
-    val jsonMatrixLocal: List<Float> = jsonBoneNode.get("matrix_local")!!.getAsJsonArray().map {
+    val jsonMatrixWorld: List<Float> = jsonBoneNode.get("matrix_world")!!.getAsJsonArray().map {
         elem -> elem.getAsFloat()
     }
 
     // aliases for easier typing
     val m = jsonMatrix
-    val ml = jsonMatrixLocal
+    val mw = jsonMatrixWorld
 
     // bone matrix is 3x3 matrix on export
     val boneMatrix = Matrix4f.of(
@@ -148,10 +148,10 @@ internal fun parseBoneNode(parent: Bone, current: JsonElement) {
         m[12], m[13], m[14], m[15]
     )
     val boneMatrixWorld = Matrix4f.of(
-        ml[0],  ml[1],  ml[2],  ml[3],
-        ml[4],  ml[5],  ml[6],  ml[7],
-        ml[8],  ml[9],  ml[10], ml[11],
-        ml[12], ml[13], ml[14], ml[15]
+        mw[0],  mw[1],  mw[2],  mw[3],
+        mw[4],  mw[5],  mw[6],  mw[7],
+        mw[8],  mw[9],  mw[10], mw[11],
+        mw[12], mw[13], mw[14], mw[15]
     )
 
     val boneNode = Bone(boneName, boneMatrix, boneMatrixWorld, parent)

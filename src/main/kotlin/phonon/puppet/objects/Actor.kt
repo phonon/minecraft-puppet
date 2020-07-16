@@ -19,17 +19,31 @@ import phonon.puppet.math.*
 import phonon.puppet.objects.*
 import phonon.puppet.animation.AnimationMixer
 
-private val WORLD_DEFAULT = Bukkit.getWorlds().get(0)
-private val LOCATION_DEFAULT = Location(WORLD_DEFAULT, 0.0, 0.0, 0.0)
+/**
+ * Declaration of model, skeleton, required to make actor.
+ * Can allow mixing of different compatible models + skeletons.
+ */
+public data class ActorPrototype(
+    val modelName: String,
+    val skeletonName: String
+)
 
+/**
+ * Main object for an interactive model with animations.
+ * Acts as glue between skeleton, meshes, and animations.
+ */
 public class Actor(
-    val name: String = "",
-    val id: Int = 0
-): GraphNode {
+    public val name: String,
+    public val uuid: UUID,
+    public var skeleton: Skeleton? = null, // associated skeleton
+    initialPosition: Vector3f,
+    initialRotation: Euler,
+    initialMatrix: Matrix4f? = null  // takes priority over initial position, rotation
+): TransformGraphNode {
 
     // scene graph
-    override var parent: GraphNode? = null
-    override val children: ArrayList<GraphNode> = arrayListOf()
+    override var parent: TransformGraphNode? = null
+    override val children: ArrayList<TransformGraphNode> = arrayListOf()
 
     // transform
     override val matrix: Matrix4f = Matrix4f.identity()
@@ -41,20 +55,62 @@ public class Actor(
     // dirty flag
     override val needsUpdate: Boolean = false
 
-    // uuid identifier
-    public val uuid: UUID = UUID.randomUUID()
-
-    // associated skeleton (independent transform hierarchy)
-    public var skeleton: Skeleton? = null
-
     // animation mixer
     public val animation: AnimationMixer = AnimationMixer()
 
     init {
-
+        // initialize transform
+        if ( initialMatrix !== null ) {
+            this.matrix.copy(initialMatrix)
+            initialMatrix.decompose(this.position, this.quaternion)
+            this.rotation.setFromQuaternion(this.quaternion, this.rotation.order)
+        }
+        else {
+            this.position.copy(initialPosition)
+            this.rotation.copy(initialRotation)
+            this.quaternion.setFromEuler(initialRotation)
+            this.matrix.compose(position, quaternion)
+        }
     }
 
-    // implement transform
+    class Builder() {
+        var _name: String = ""
+        var _uuid: UUID = UUID.randomUUID()
+        val _position = Vector3f.zero()
+        val _rotation = Euler.zero()
+        var _matrix: Matrix4f? = null
+        var _skeleton: Skeleton? = null
+
+        fun name(s: String) = apply { this._name = s }
+        fun position(x: Float, y: Float, z: Float) = apply { this._position.set(x, y, z) }
+        fun position(x: Double, y: Double, z: Double) = apply { this._position.set(x, y, z) }
+        fun rotation(x: Float, y: Float, z: Float) = apply { this._rotation.set(x, y, z, this._rotation.order) }
+        fun rotation(x: Double, y: Double, z: Double) = apply { this._rotation.set(x, y, z, this._rotation.order) }
+        fun matrix(m: Matrix4f) = apply { this._matrix = m }
+        fun skeleton(s: Skeleton) = apply { this._skeleton = s }
+
+        fun build() = Actor(this._name, this._uuid, this._skeleton, this._position, this._rotation, this._matrix)
+    }
+
+    /**
+     * Use UUID for hashcode
+     */
+    override public fun hashCode(): Int {
+        return this.uuid.hashCode()
+    }
+
+    /**
+     * Cleanup self and tree
+     */
+    override public fun destroy() {
+        for ( child in this.children ) {
+            child.destroy()
+        }
+    }
+
+    /**
+     * Implement transform update
+     */
     override public fun updateTransform() {
         // update local transform
         this.matrix.compose(this.position, this.quaternion)
@@ -73,7 +129,7 @@ public class Actor(
             child.updateTransform()
         }
     }
-    
+
     /**
      * Render loop update function
      */
@@ -92,6 +148,17 @@ public class Actor(
         }
     }
     
+    /**
+     * Render this actor's mesh objects.
+     */
+    public fun render() {
+        this.traverse({ obj -> 
+            if ( obj is Mesh ) {
+                obj.render()
+            }
+        })
+    }
+
     /**
      * Make actor play an animation. If animation is already
      * playing on this actor, this will only update the animation
@@ -130,7 +197,7 @@ public class Actor(
      * @param ticks 
      */
     public fun crossfadeAnimation(oldAnim: String, oldWeight: Double, newAnim: String, newWeight: Double, ticks: Long) {
-        
+        // TODO
     }
 
     /**
@@ -146,26 +213,36 @@ public class Actor(
      */
     companion object {
 
-        // counter for generating actor ids
-        private var idCounter: Int = 0
-        
-        // link actor id -> actor for access
-        public val actors: HashMap<Int, Actor> = hashMapOf()
+        // actor type library
+        public val library: HashMap<String, ActorPrototype> = hashMapOf()
 
-        // create actor with automatic integer id number
-        public fun create(name: String): Actor {
-            val id = Actor.idCounter
-            Actor.idCounter += 1
-
-            val actor = Actor(name, id)
-            Actor.actors.put(actor.id, actor)
-
-            return actor
+        /**
+         * Save actor prototype with given name into library.
+         * Will overwrite existing keys.
+         */
+        public fun save(name: String, actorType: ActorPrototype) {
+            Actor.library.put(name, actorType)
         }
 
-        // return actor from integer
-        public fun get(id: Int): Actor? {
-            return Actor.actors.get(id)
+        /**
+         * Clear library map
+         */
+        public fun clear() {
+            Actor.library.clear()
+        }
+
+        /**
+         * Return actor prototype from type name.
+         */
+        public fun get(type: String): ActorPrototype? {
+            return Actor.library.get(type)
+        }
+
+        /**
+         * Get list of actor prototype keys in library.
+         */
+        public fun types(): List<String> {
+            return Actor.library.keys.toList()
         }
     }
 }

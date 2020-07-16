@@ -48,6 +48,7 @@ public class PuppetPlugin : JavaPlugin() {
         pm.registerEvents(PlayerMoveListener(), this)
 
         // register commands
+        this.getCommand("actor")?.setExecutor(ActorCommand())
         this.getCommand("puppet")?.setExecutor(PuppetCommand())
 
         // print data loaded

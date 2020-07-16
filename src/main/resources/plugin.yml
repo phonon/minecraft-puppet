@@ -8,3 +8,8 @@ commands:
     aliases: [pp]
     permission: puppet.command.puppet
     usage: /puppet help
+  actor:
+    description: Actor manipulation commands
+    aliases: [a, act]
+    permission: puppet.command.actor
+    usage: /actor help

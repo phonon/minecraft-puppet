@@ -83,9 +83,6 @@ tasks {
 
     build {
         dependsOn(shadowJar)
-        doLast {
-            println("[BUILD] VERSION LOLE ${version}")
-        }
     }
     
     test {
