@@ -11,8 +11,10 @@ interface TransformGraphNode: Transform {
     // cleanup self
     fun destroy()
 
-    // add an graph node as a child
-    // This will overwrite the existing parent of the obj
+    /**
+     * Add an graph node as a child. This will overwrite
+     * the existing parent of the child object.
+     */
     fun add(obj: TransformGraphNode) {
         // make sure not already contained
         for ( child in this.children ) {
@@ -26,7 +28,9 @@ interface TransformGraphNode: Transform {
         this.children.add(obj)
     }
 
-    // remove a child
+    /**
+     * Remove a child object.
+     */
     fun remove(obj: TransformGraphNode) {
         for ( (i, child) in this.children.withIndex() ) {
             if ( obj === child ) {

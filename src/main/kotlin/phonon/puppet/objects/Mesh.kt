@@ -261,11 +261,11 @@ public class Mesh(
 
         /**
          * Print list of library custom models
-         * @param p target to print messages to
+         * @param target target to print messages to
          */
-        fun printInfo(p: CommandSender) {
+        fun printInfo(target: CommandSender) {
             for ( (i, name) in Mesh.libraryList.withIndex() ) {
-                Message.print(p, "[${i+1}]: ${name}")
+                Message.print(target, "[${i+1}]: ${name}")
             }
         }
     }

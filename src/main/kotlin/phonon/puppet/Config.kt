@@ -55,15 +55,21 @@ public object Config {
     // Ingame settings
     // ========================================
     
+    // automatically start rendering engine when plugin loads
+    public var autoStartEngine: Boolean = true
+
     // item type to use for custom models metadata
-    public var modelItem = Material.BONE
+    public var modelItem: Material = Material.BONE
 
     // make model armorstands invincible (with event listener)
-    public var makeModelsInvulnerable = true;
+    public var makeModelsInvulnerable: Boolean = true
 
     
-    // load config
+    /**
+     * Load config from config.yml file
+     */
     public fun load(config: FileConfiguration) {
-
+        
     }
+    
 }

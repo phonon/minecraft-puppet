@@ -338,7 +338,6 @@ public object Puppet {
 
         val raytraceResult = player.world.rayTraceEntities(start, direction, maxDistance, raySize, filter)
         val entityHit = raytraceResult?.getHitEntity()
-        println(entityHit)
 
         if ( entityHit !== null ) {
             return Puppet.getActorFromEntity(entityHit)

@@ -55,12 +55,29 @@ public class Skeleton(
         return copy
     }
 
-    // update skeleton transforms and animation
+    /**
+     * Update skeleton bone transforms. 
+     */
     public fun update() {
         this.root.updateTransform()
     }
 
-    // static methods
+    /**
+     * Reset all bones in skeleton to bind pose
+     */
+    public fun reset() {
+        this.root.traverse({ bone ->
+            if ( bone is Bone ) {
+                bone.reset()
+            }
+        })
+        
+        this.root.updateTransform()
+    }
+
+    /**
+     * Static class manager methods
+     */
     companion object {
         // prototype library, clone one of these to get a skeleton
         val library: HashMap<String, Skeleton> = hashMapOf()

@@ -37,7 +37,7 @@ private val SUBCOMMANDS: List<String> = listOf(
     "teleport",
     "rotate",
     "pose",
-    "stands",
+    "armorstands",
     "animinfo",
     "animlist",
     "play",
@@ -72,7 +72,6 @@ public class ActorCommand : CommandExecutor, TabCompleter {
             "list" -> listActors(sender, args)
             "models" -> printModels(sender)
             "reset" -> resetActorPose(sender, args)
-            "bone" -> setBone(sender, args)
             "move" -> moveActor(sender, args)
             "teleport" -> teleportActor(sender, args)
             "rotate" -> rotateActor(sender, args)
@@ -87,6 +86,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
             "start" -> startAnimation(sender, args)
             "step" -> stepAnimation(sender, args)
             "restart" -> restartAnimation(sender, args)
+            "bone" -> boneCommands(sender, args)
             else -> { Message.error(sender, "Invalid command, use \"/actor help\"") }
         }
 
@@ -158,6 +158,25 @@ public class ActorCommand : CommandExecutor, TabCompleter {
                         return filterByStart(Puppet.getActorNames(), args[args.size-1])
                     }
                 }
+
+                // /actor bone [subcommand] [actor] [bone] ...
+                "bone" -> {
+                    if ( args.size == 2 ) {
+                        return filterByStart(listOf("info", "rotate", "position"), args[1])
+                    }
+                    else if ( args.size == 3 ) {
+                        return filterByStart(Puppet.getActorNames(), args[2])
+                    }
+                    else if ( args.size == 4 ) {
+                        val actorName = args[2]
+                        val skeleton = Puppet.getActor(actorName)?.skeleton
+                        if ( skeleton === null ) {
+                            return listOf()
+                        }
+
+                        return filterByStart(skeleton.bones.keys.toList(), args[3])
+                    }
+                }
             }
         }
 
@@ -186,7 +205,6 @@ public class ActorCommand : CommandExecutor, TabCompleter {
         Message.print(sender, "/actor list${ChatColor.WHITE}: List actors created")
         Message.print(sender, "/actor models${ChatColor.WHITE}: List all available models")
         Message.print(sender, "/actor reset${ChatColor.WHITE}: Reset actor pose to default")
-        Message.print(sender, "/actor bone${ChatColor.WHITE}: Adjust actor bone")
         Message.print(sender, "/actor move${ChatColor.WHITE}: Adjust actor position")
         Message.print(sender, "/actor teleport${ChatColor.WHITE}: Teleport actor to location")
         Message.print(sender, "/actor rotate${ChatColor.WHITE}: Adjust actor rotation")
@@ -201,6 +219,9 @@ public class ActorCommand : CommandExecutor, TabCompleter {
         Message.print(sender, "/actor stopall${ChatColor.WHITE}: Stop and remove all actor animations")
         Message.print(sender, "/actor step${ChatColor.WHITE}: Run 1 animation frame for actor")
         Message.print(sender, "/actor restart${ChatColor.WHITE}: Restart animation")
+        Message.print(sender, "/actor bone info${ChatColor.WHITE}: Print actor bone info")
+        Message.print(sender, "/actor bone rotate${ChatColor.WHITE}: Set actor bone rotation")
+        Message.print(sender, "/actor bone position${ChatColor.WHITE}: Set actor bone position")
     }
     
     /**
@@ -364,6 +385,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
     }
     
     /**
+     * @command /actor models
      * print list of custom model data
      */
     private fun printModels(sender: CommandSender) {
@@ -377,47 +399,26 @@ public class ActorCommand : CommandExecutor, TabCompleter {
      * Reset actor rotation and all bone poses
      */
     private fun resetActorPose(sender: CommandSender, args: Array<String>) {
+        // get actor targets
+        val targets = getActorTargets(sender, args, 1)
 
-    }
-
-    /**
-     * 
-     */
-    private fun setBone(sender: CommandSender, args: Array<String>) {
-        if ( args.size < 3 ) {
-            Message.print(sender, "Usage: /actor bone [actorName] [boneName] [rot.x] [rot.y] [rot.z]")
+        if ( targets.size < 1 ) {
+            Message.error(sender, "Usage: /actor reset: run on actor you are looking at")
+            Message.error(sender, "Usage: /actor reset [actor0] [actor1] ...: run on actor list")
             return
         }
 
-        val actorName = args[1]
-        val actor = Puppet.getActor(actorName)
-        if ( actor === null ) {
-            Message.error(sender, "Invalid actor: ${actorName}")
-            return
+        // run on targets
+        for ( actor in targets ) {
+            val skeleton = actor.skeleton
+            if ( skeleton !== null ) {
+                skeleton.reset()
+                Message.print(sender, "Resetting actor \"${actor.name}\" pose.")
+            }
+            else {
+                Message.error(sender, "Actor \"${actor.name}\" has no bones.")
+            }
         }
-
-        val boneName = args[2]
-        val bone = actor.skeleton?.bones?.get(boneName)
-        if ( bone === null ) {
-            Message.error(sender, "Invalid bone: ${boneName}")
-            return
-        }
-
-        // no input args to change bone: print current bone info
-        if ( args.size < 6 ) {
-            Message.print(sender, "Actor \"${actor.name}\" bone \"${boneName}\":")
-            Message.print(sender, "- position = [ ${bone.position.x}, ${bone.position.y}, ${bone.position.z} ]")
-            Message.print(sender, "- rotation = [ ${bone.rotation.x}, ${bone.rotation.y}, ${bone.rotation.z} ]")
-            Message.print(sender, "- quaternion = [ ${bone.quaternion.x}, ${bone.quaternion.y}, ${bone.quaternion.z} ${bone.quaternion.w} ]")
-            return
-        }
-        
-        val rotX = args[3].toDouble()
-        val rotY = args[4].toDouble()
-        val rotZ = args[5].toDouble()
-
-        bone.setRotation(rotX, rotY, rotZ)
-        actor.updateTransform()
     }
 
     /**
@@ -566,7 +567,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
             return
         }
 
-        val visible: Boolean = when ( args[2].toLowerCase() ) {
+        val visible: Boolean = when ( args[1].toLowerCase() ) {
             "show" -> true
             "hide" -> false
             else -> false
@@ -760,7 +761,15 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
         // run on targets
         for ( actor in targets ) {
-            actor.animation.update()
+            // if engine running, just update animation
+            if ( Puppet.isRunning ) {
+                actor.animation.update()
+            }
+            else { // update full actor transform and manually render
+                actor.update()
+                actor.render()
+            }
+
             Message.print(sender, "Actor \"${actor.name}\" stepped animation by 1 tick.")
         }
     }
@@ -787,8 +796,164 @@ public class ActorCommand : CommandExecutor, TabCompleter {
         }
     }
     
-}
+    //=======================================
+    // Bone pose commands
+    // ======================================
+    private fun boneCommands(sender: CommandSender, args: Array<String>) {
 
+        fun printBoneCommandInfo(sender: CommandSender) {
+            Message.print(sender, "Actor bone commands:")
+            Message.print(sender, "/actor bone info${ChatColor.WHITE}: Print actor bone info")
+            Message.print(sender, "/actor bone rotate${ChatColor.WHITE}: Set actor bone rotation")
+            Message.print(sender, "/actor bone position${ChatColor.WHITE}: Set actor bone position")
+            Message.print(sender, "Use command with no arguments to see usage.")
+        }
+
+        // parse subcommand: /actor bone [subcommand]
+        if ( args.size < 2 ) {
+            printBoneCommandInfo(sender)
+            return
+        }
+
+        when ( args[1].toLowerCase() ) {
+            "info" -> printBoneInfo(sender, args)
+            "rotate" -> setBoneRotation(sender, args)
+            "position" -> setBonePosition(sender, args)
+            else -> {
+                Message.error(sender, "Invalid /actor bone subcommand")
+                printBoneCommandInfo(sender)
+            }
+        }
+    }
+
+    /**
+     * @command /actor bone info [actor] [bone]
+     * Prints info (position, rotation, ...) about a bone in an
+     * actor skeleton.
+     */
+    private fun printBoneInfo(sender: CommandSender, args: Array<String>) {
+        if ( args.size < 3 ) {
+            Message.error(sender, "Usage: /actor bone info [actor] [bone]")
+            return
+        }
+
+        val actorName = args[2]
+        val actor = Puppet.getActor(actorName)
+        if ( actor === null ) {
+            Message.error(sender, "Invalid actor: ${actorName}")
+            return
+        }
+
+        val boneName = args[3]
+        val bone = actor.skeleton?.bones?.get(boneName)
+        if ( bone === null ) {
+            Message.error(sender, "Invalid bone: ${boneName}")
+            return
+        }
+
+        Message.print(sender, "Actor \"${actor.name}\":")
+        bone.printInfo(sender)
+    }
+
+    /**
+     * @command /actor bone rotate [actor] [bone] [x] [y] [z]
+     * Set rotation for actor named `[actor]` bone named `[bone]`
+     * to euler angle input (x, y, z) in degrees. Euler rotation
+     * order is ZYX.
+     */
+    private fun setBoneRotation(sender: CommandSender, args: Array<String>) {
+        if ( args.size < 3 ) {
+            Message.error(sender, "Usage: /actor bone rotate [actor] [bone] [x] [y] [z]")
+            return
+        }
+
+        val actorName = args[2]
+        val actor = Puppet.getActor(actorName)
+        if ( actor === null ) {
+            Message.error(sender, "Invalid actor: ${actorName}")
+            return
+        }
+
+        val boneName = args[3]
+        val bone = actor.skeleton?.bones?.get(boneName)
+        if ( bone === null ) {
+            Message.error(sender, "Invalid bone: ${boneName}")
+            return
+        }
+
+        // not enough inputs args to change bone
+        if ( args.size < 7 ) {
+            Message.error(sender, "Usage: /actor bone rotate [actor] [bone] [x] [y] [z]")
+            Message.error(sender, "Need to input all (x, y, z) values...")
+            return
+        }
+        
+        val xDeg = args[4].toDouble()
+        val yDeg = args[5].toDouble()
+        val zDeg = args[6].toDouble()
+
+        val x = Math.toRadians(xDeg)
+        val y = Math.toRadians(yDeg)
+        val z = Math.toRadians(zDeg)
+
+        bone.setRotation(x, y, z)
+        actor.update()
+
+        Message.print(sender, "Set actor \"${actor.name}\" bone \"${bone.name}\" rotation to (${xDeg}, ${yDeg}, ${zDeg})")
+
+        // need manual render if engine is not running
+        if ( !Puppet.isRunning ) {
+            actor.render()
+        }
+    }
+
+    /**
+     * @command /actor bone position [actor] [bone] [x] [y] [z]
+     * Set position for actor named `[actor]` bone named `[bone]`
+     * to input (x, y, z).
+     */
+    public fun setBonePosition(sender: CommandSender, args: Array<String>) {
+        if ( args.size < 3 ) {
+            Message.error(sender, "Usage: /actor bone position [actor] [bone] [x] [y] [z]")
+            return
+        }
+
+        val actorName = args[2]
+        val actor = Puppet.getActor(actorName)
+        if ( actor === null ) {
+            Message.error(sender, "Invalid actor: ${actorName}")
+            return
+        }
+
+        val boneName = args[3]
+        val bone = actor.skeleton?.bones?.get(boneName)
+        if ( bone === null ) {
+            Message.error(sender, "Invalid bone: ${boneName}")
+            return
+        }
+
+        // not enough inputs args to change bone
+        if ( args.size < 7 ) {
+            Message.error(sender, "Usage: /actor bone position [actor] [bone] [x] [y] [z]")
+            Message.error(sender, "Need to input all (x, y, z) values...")
+            return
+        }
+        
+        val x = args[4].toDouble()
+        val y = args[5].toDouble()
+        val z = args[6].toDouble()
+
+        bone.setPosition(x, y, z)
+        actor.update()
+
+        Message.print(sender, "Set actor \"${actor.name}\" bone \"${bone.name}\" position to (${x}, ${y}, ${z})")
+
+        // need manual render if engine is not running
+        if ( !Puppet.isRunning ) {
+            actor.render()
+        }
+    }
+}
 
 /**
  * Typical actor command format is:

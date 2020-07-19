@@ -5,7 +5,10 @@
 package phonon.puppet.objects
 
 import java.util.UUID
+import org.bukkit.ChatColor
+import org.bukkit.command.CommandSender
 import phonon.puppet.Puppet
+import phonon.puppet.Message
 import phonon.puppet.math.*
 
 public class Bone(
@@ -120,4 +123,27 @@ public class Bone(
 
         return "Bone { name=${this.name}, children=${children} }"
     }
+
+    /**
+     * Prints bone info in message to target.
+     * @param target target to print messages to
+     */
+    public fun printInfo(target: CommandSender) {
+        val parent = this.parent
+
+        Message.print(target, "Bone ${this.name}:")
+        Message.print(target, "- parent: ${if ( parent !== null && parent is Bone ) parent.name else "${ChatColor.DARK_GRAY}none"}")
+        Message.print(target, "- position: [ ${this.position.x}, ${this.position.y}, ${this.position.z} ]")
+        Message.print(target, "- rotation: [ ${this.rotation.x}, ${this.rotation.y}, ${this.rotation.z} ]")
+        Message.print(target, "- quaternion: [ ${this.quaternion.x}, ${this.quaternion.y}, ${this.quaternion.z} ${this.quaternion.w} ]")
+    }
+
+    /**
+     * Reset bone to bind pose
+     */
+    public fun reset() {
+        this.position.copy(this.bindPosition)
+        this.quaternion.copy(this.bindQuaternion)
+    }
+
 }
