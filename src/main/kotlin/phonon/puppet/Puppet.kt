@@ -98,7 +98,9 @@ public object Puppet {
     }
 
     /**
-     * Print engine info to target
+     * Print engine info to target.
+     * 
+     * @param target target Bukkit player or console CommandSender
      */
     public fun printInfo(target: CommandSender) {
         Message.print(target, "${ChatColor.BOLD}Puppet Animation Engine v${Puppet.version}")
@@ -114,6 +116,10 @@ public object Puppet {
 
     /**
      * Create actor with single mesh model.
+     * 
+     * @param meshType custom model name
+     * @param location Bukkit location to create the actor at
+     * @return result containing created actor or exception with failure case 
      */
     public fun createMeshAtLocation(meshType: String, location: Location): Result<Actor> {
         if ( !Mesh.has(meshType) ) {
@@ -145,6 +151,10 @@ public object Puppet {
 
     /**
      * Create actor from ActorPrototype type string at given location.
+     * 
+     * @param type actor prototype name (get types using Actor.types())
+     * @param location Bukkit location to create the actor at
+     * @return result containing created actor or exception with failure case 
      */
     public fun createActorAtLocation(type: String, location: Location): Result<Actor> {
         // check if actor prototype exists
@@ -216,6 +226,8 @@ public object Puppet {
 
     /**
      * Register actor with Puppet engine
+     * 
+     * @param actor actor to add to engine
      */
     public fun registerActor(actor: Actor) {
         Puppet.actors.put(actor.name, actor)
@@ -232,9 +244,11 @@ public object Puppet {
     }
 
     /**
-     * Remove actor and cleanup its components
+     * Remove actor and cleanup its components.
+     * 
+     * @param actor actor to destroy
      */
-    public fun destroyActor(actor: Actor): Boolean {
+    public fun destroyActor(actor: Actor) {
         // manually process actor tree instead of using actor.destroy()
         actor.traverse({ obj -> 
             if ( obj is Mesh ) {
@@ -257,8 +271,6 @@ public object Puppet {
                 break
             }
         }
-        
-        return true
     }
 
     /**
@@ -272,31 +284,39 @@ public object Puppet {
     }
 
     /**
-     * Returns list of actor names
+     * Returns list of actor names currently in game.
+     * 
+     * @return list of actor names currently in game
      */
     public fun getActorNames(): List<String> {
         return Puppet.actors.keys.toList()
     }
 
     /**
-     * Return actor from name if it exists.
-     * Returns null if it does not exist.
+     * Return actor from name if it exists, otherwise null.
+     * 
+     * @param name name of actor
+     * @return actor from name if it exists, otherwise null
      */
     public fun getActor(name: String): Actor? {
         return Puppet.actors.get(name)
     }
 
     /**
-     * Return actor from UUID if it exists.
-     * Returns null if it does not exist.
+     * Return actor from UUID if it exists, otherwise null.
+     * 
+     * @param uuid UUID of actor
+     * @return actor from UUID if it exists, otherwise null
      */
     public fun getActorById(uuid: UUID): Actor? {
         return Puppet.actorsById.get(uuid)
     }
 
     /**
-     * Return actor associated with an Entity
+     * Return actor associated with an Entity.
+     * 
      * @param entity entity (should be an ArmorStand)
+     * @return actor from entity if it exists, otherwise null
      */
     public fun getActorFromEntity(entity: Entity): Actor? {
         return Puppet.entityToActor.get(entity)
@@ -305,8 +325,10 @@ public object Puppet {
     /**
      * Get first actor player is currently looking at.
      * Uses raycast to check entities player is viewing.
+     * 
      * @param player player source
      * @param maxDistance max distance of raycast
+     * @return first actor player is looking at, null if there is none
      */
     public fun getActorPlayerIsLookingAt(player: Player, maxDistance: Double = 10.0): Actor? {
         val start = player.getEyeLocation()
@@ -326,8 +348,11 @@ public object Puppet {
     }
 
     /**
-     * Toggle visibility of armor stands in an transform tree
-     * that may contain Mesh objects.
+     * Toggle visibility of armor stands for a TransformGraphNode
+     * object and all its children (affects Mesh type objects).
+     * 
+     * @param obj object in a transform graph
+     * @param visible true to set ArmorStands visible
      */
     public fun toggleArmorStands(obj: TransformGraphNode, visible: Boolean) {
         obj.traverse({
@@ -342,6 +367,9 @@ public object Puppet {
      * in format "typeN", where N is an integer. It will
      * generate in order N = 0, 1, ... until the first unused
      * number is found, i.e. "actor0", "actor1", ...
+     * 
+     * @param type actor type name
+     * @return unique actor name from type
      */
     public fun generateActorName(type: String): String {
         var i = 0
@@ -354,14 +382,22 @@ public object Puppet {
     }
 
     /**
-     * Add renderable mesh object
+     * Mark mesh object as renderable, which means it will
+     * run its render() function on every engine update tick.
+     * Only affects a single mesh object and not its children.
+     * 
+     * @param mesh mesh object
      */
     public fun addRenderable(mesh: Mesh) {
         Puppet.renderable.add(mesh)
     }
 
     /**
-     * Remove renderable mesh object
+     * Remove mesh object from renderables. It will no longer
+     * run its render() update during engine ticks.
+     * Only affects a single mesh object and not its children.
+     * 
+     * @param mesh mesh object
      */
     public fun removeRenderable(mesh: Mesh) {
         Puppet.renderable.remove(mesh)

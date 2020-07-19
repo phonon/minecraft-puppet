@@ -138,7 +138,9 @@ public class Actor(
         this.updateTransform()
 
         // update animations
-        animation.update()
+        if ( animation.enabled ) {
+            animation.update()
+        }
 
         // write animations to meshes
         val skeleton = this.skeleton
@@ -158,55 +160,6 @@ public class Actor(
             }
         })
     }
-
-    /**
-     * Make actor play an animation. If animation is already
-     * playing on this actor, this will only update the animation
-     * mixing weight.
-     * 
-     * @param name animation name
-     * @param weight strength of animation weighting
-     */
-    public fun playAnimation(name: String, weight: Double = 1.0) {
-        this.animation.play(name, weight)
-    }
-
-    /**
-     * Make actor stop playing an animation. If input
-     * is empty or null, this will stop all animations.
-     * 
-     * @param name animation name to stop (null to stop all)
-     */
-    public fun stopAnimation(name: String? = null) {
-        if ( name === null ) {
-            this.animation.stopAll()
-            return
-        }
-
-        this.animation.stop(name)
-    }
-
-    /**
-     * Linearly interpolates between playing two animations
-     * over input ticks period.
-     * 
-     * @param oldAnim
-     * @param oldWeight
-     * @param newAnim
-     * @param newWeight
-     * @param ticks 
-     */
-    public fun crossfadeAnimation(oldAnim: String, oldWeight: Double, newAnim: String, newWeight: Double, ticks: Long) {
-        // TODO
-    }
-
-    /**
-     * Get list of names of active animations this actor is playing.
-     */
-    public fun currentAnimations(): List<String> {
-        return listOf()
-    }
-
 
     /**
      * Static manager methods

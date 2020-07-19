@@ -43,6 +43,7 @@ private val SUBCOMMANDS: List<String> = listOf(
     "play",
     "pause",
     "stop",
+    "stopall",
     "start",
     "step",
     "restart"
@@ -76,12 +77,13 @@ public class ActorCommand : CommandExecutor, TabCompleter {
             "teleport" -> teleportActor(sender, args)
             "rotate" -> rotateActor(sender, args)
             "pose" -> poseActor(sender, args)
-            "stands" -> toggleArmorStands(sender, args)
+            "armorstands" -> toggleArmorStands(sender, args)
             "animinfo" -> animationInfo(sender, args)
             "animlist" -> listAnimations(sender, args)
             "play" -> playAnimation(sender, args)
             "pause" -> pauseAnimation(sender, args)
             "stop" -> stopAnimation(sender, args)
+            "stopall" -> stopAllAnimation(sender, args)
             "start" -> startAnimation(sender, args)
             "step" -> stepAnimation(sender, args)
             "restart" -> restartAnimation(sender, args)
@@ -126,7 +128,11 @@ public class ActorCommand : CommandExecutor, TabCompleter {
                 "kill",
                 "reset",
                 "pose",
-                "stop" -> {
+                "pause",
+                "start",
+                "stopall",
+                "step",
+                "restart" -> {
                     if ( args.size >= 2 ) {
                         return filterByStart(Puppet.getActorNames(), args[args.size-1])
                     }
@@ -134,9 +140,19 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
                 // /actor play [animation] [actor0] [actor1] ...
                 "play",
-                "pose" -> {
+                "stop" -> {
                     if ( args.size == 2 ) {
                         return filterByStart(AnimationTrack.list(), args[1])
+                    }
+                    else if ( args.size >= 3 ) {
+                        return filterByStart(Puppet.getActorNames(), args[args.size-1])
+                    }
+                }
+
+                // /actor armorstands [show/hide] [actor0] [actor1] ...
+                "armorstands" -> {
+                    if ( args.size == 2 ) {
+                        return filterByStart(listOf("show", "hide"), args[1])
                     }
                     else if ( args.size >= 3 ) {
                         return filterByStart(Puppet.getActorNames(), args[args.size-1])
@@ -164,47 +180,51 @@ public class ActorCommand : CommandExecutor, TabCompleter {
         Message.print(sender, "[Puppet] Actor Commands:")
         Message.print(sender, "/actor info${ChatColor.WHITE}: Print info about actor")
         Message.print(sender, "/actor create${ChatColor.WHITE}: Create an actor")
-        Message.print(sender, "/actor mesh ${ChatColor.WHITE}: Create mesh type actor")
-        Message.print(sender, "/actor kill ${ChatColor.WHITE}: Kill an actor")
-        Message.print(sender, "/actor killall ${ChatColor.WHITE}: Kill all actors")
-        Message.print(sender, "/actor list ${ChatColor.WHITE}: List actors created")
-        Message.print(sender, "/actor models ${ChatColor.WHITE}: List all available models")
-        Message.print(sender, "/actor reset ${ChatColor.WHITE}: Reset actor pose to default")
-        Message.print(sender, "/actor bone ${ChatColor.WHITE}: Adjust actor bone")
-        Message.print(sender, "/actor move ${ChatColor.WHITE}: Adjust actor position")
-        Message.print(sender, "/actor teleport ${ChatColor.WHITE}: Teleport actor to location")
-        Message.print(sender, "/actor rotate ${ChatColor.WHITE}: Adjust actor rotation")
-        Message.print(sender, "/actor pose ${ChatColor.WHITE}: Adjust actor position/rotation using player movement")
-        Message.print(sender, "/actor stands ${ChatColor.WHITE}: Show actor Armor Stands")
-        Message.print(sender, "/actor animinfo ${ChatColor.WHITE}: Print info about an animation")
-        Message.print(sender, "/actor animlist ${ChatColor.WHITE}: List all animations")
-        Message.print(sender, "/actor play ${ChatColor.WHITE}: Make actor play animation")
-        Message.print(sender, "/actor pause ${ChatColor.WHITE}: Stop actor animation (can resume)")
-        Message.print(sender, "/actor start ${ChatColor.WHITE}: Start playing actor animations")
-        Message.print(sender, "/actor stop ${ChatColor.WHITE}: Stop and remove actor animations")
-        Message.print(sender, "/actor step ${ChatColor.WHITE}: Run 1 animation frame for actor")
-        Message.print(sender, "/actor restart ${ChatColor.WHITE}: Restart animation")
+        Message.print(sender, "/actor mesh${ChatColor.WHITE}: Create mesh type actor")
+        Message.print(sender, "/actor kill${ChatColor.WHITE}: Kill an actor")
+        Message.print(sender, "/actor killall${ChatColor.WHITE}: Kill all actors")
+        Message.print(sender, "/actor list${ChatColor.WHITE}: List actors created")
+        Message.print(sender, "/actor models${ChatColor.WHITE}: List all available models")
+        Message.print(sender, "/actor reset${ChatColor.WHITE}: Reset actor pose to default")
+        Message.print(sender, "/actor bone${ChatColor.WHITE}: Adjust actor bone")
+        Message.print(sender, "/actor move${ChatColor.WHITE}: Adjust actor position")
+        Message.print(sender, "/actor teleport${ChatColor.WHITE}: Teleport actor to location")
+        Message.print(sender, "/actor rotate${ChatColor.WHITE}: Adjust actor rotation")
+        Message.print(sender, "/actor pose${ChatColor.WHITE}: Adjust actor position/rotation using player movement")
+        Message.print(sender, "/actor armorstands${ChatColor.WHITE}: Show actor Armor Stands")
+        Message.print(sender, "/actor animinfo${ChatColor.WHITE}: Print info about an animation")
+        Message.print(sender, "/actor animlist${ChatColor.WHITE}: List all animations")
+        Message.print(sender, "/actor play${ChatColor.WHITE}: Make actor play animation")
+        Message.print(sender, "/actor pause${ChatColor.WHITE}: Stop actor animation (can resume)")
+        Message.print(sender, "/actor start${ChatColor.WHITE}: Start playing actor animations")
+        Message.print(sender, "/actor stop${ChatColor.WHITE}: Stop and remove actor animations")
+        Message.print(sender, "/actor stopall${ChatColor.WHITE}: Stop and remove all actor animations")
+        Message.print(sender, "/actor step${ChatColor.WHITE}: Run 1 animation frame for actor")
+        Message.print(sender, "/actor restart${ChatColor.WHITE}: Restart animation")
     }
     
     /**
-     * 
+     * @command /actor info [actor0] [actor1] ...
+     * Print info about actors in input list or from what
+     * player is looking at.
      */
     private fun actorInfo(sender: CommandSender, args: Array<String>) {
-        // no actor id input, see if player is looking at actor
-        if ( args.size < 2 ) {
-            val player = if ( sender is Player ) sender else null
-            if ( player !== null ) {
-                val actor = Puppet.getActorPlayerIsLookingAt(player)
-                if ( actor !== null ) {
-                    Message.print(player, "ACTOR: ${actor}")
-                    return
-                }
-                Message.error(sender, "No actor in sight")
-            }
+        // get actor targets
+        val targets = getActorTargets(sender, args, 1)
 
-            Message.error(sender, "Usage: /actor actor: info for actor player is looking at")
-            Message.error(sender, "Usage: /actor actor [id]: info for actor id")
+        if ( targets.size == 0 ) {
+            Message.error(sender, "Usage: /actor info: info for actor player is looking at")
+            Message.error(sender, "Usage: /actor info [actor0] [actor1] ...: info for actor id")
             return
+        }
+
+        for ( actor in targets ) {
+            Message.print(sender, "Actor: ${actor.name}")
+            Message.print(sender, "- skeleton: ${actor.skeleton?.name ?: "none"}")
+            Message.print(sender, "- animations:")
+            for ( anim in actor.animation.playing.keys ) {
+                Message.print(sender, "   - ${anim}")
+            }
         }
     }
 
@@ -309,12 +329,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
         for ( actor in targets ) {
             val result = Puppet.destroyActor(actor)
-            if ( result == true ) {
-                Message.print(sender, "Destroyed actor \"${actor.name}\"")
-            }
-            else {
-                Message.error(sender, "Failed to destroy actor \"${actor.name}\"")
-            }
+            Message.print(sender, "Destroyed actor \"${actor.name}\"")
         }
     }
 
@@ -353,7 +368,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
      */
     private fun printModels(sender: CommandSender) {
         if ( sender !== null ) {
-            Mesh.print(sender)
+            Mesh.printInfo(sender)
         }
     }
 
@@ -507,6 +522,8 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
     /**
      * @command /actor pose [actor0] [actor1] ...
+     * Move and rotate actor using player movement. The actor
+     * will move with player and face same direction as player.
      */
     private fun poseActor(sender: CommandSender, args: Array<String>) {
         val player = if ( sender is Player ) sender else null
@@ -538,35 +555,37 @@ public class ActorCommand : CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * @command /actor armorstands [show/hide] [actor0] [actor1] ...
+     * Show or hide ArmorStand entities used for animating
+     * actor models. Used for debug.
+     */
     private fun toggleArmorStands(sender: CommandSender, args: Array<String>) {
         if ( args.size < 2 ) {
-            Message.print(sender, "Usage: /actor pose [actorName]")
+            Message.print(sender, "Usage: /actor armorstands [show/hide] [actor0] [actor1] ...")
             return
         }
 
-        val actorName = args[1]
-        val actor = Puppet.getActor(actorName)
-        if ( actor === null ) {
-            Message.error(sender, "Invalid actor id: ${actorName}")
-            return
-        }
-        
-        val visible: Boolean = if ( args.size < 3 ) {
-            false
-        }
-        else {
-            when ( args[2].toLowerCase() ) {
-                "show" -> true
-                "hide" -> false
-                else -> false
-            }
+        val visible: Boolean = when ( args[2].toLowerCase() ) {
+            "show" -> true
+            "hide" -> false
+            else -> false
         }
 
-        Puppet.toggleArmorStands(actor, visible)
-        
-        Message.print(sender, "Setting actor ${actorName} armor stands: ${visible}")
+        // get actor targets
+        val targets = getActorTargets(sender, args, 2)
+
+        // run on targets
+        for ( actor in targets ) {
+            Puppet.toggleArmorStands(actor, visible)
+            Message.print(sender, "Set actor \"${actor.name}\" armor stands visiblity: ${visible}")
+        }
     }
 
+    /**
+     * @command /actor animlist
+     * Print list of all available animations
+     */
     private fun listAnimations(sender: CommandSender, args: Array<String>) {
         Message.print(sender, "Animations:")
         
@@ -576,6 +595,10 @@ public class ActorCommand : CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * @command /actor animinfo [animation]
+     * Print information about an animation
+     */
     private fun animationInfo(sender: CommandSender, args: Array<String>) {
         if ( args.size < 2 ) {
             Message.print(sender, "Usage: /actor animinfo [animation]")
@@ -605,11 +628,12 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
     /**
      * @command /actor play [animation] [actor0] [actor1] ...
-     * 
+     * Make actors play animation from name `[animation]`.
      */
     private fun playAnimation(sender: CommandSender, args: Array<String>) {
         if ( args.size < 2 ) {
-            Message.error(sender, "Usage: /actor play [animation] [actor0] [actor1] ...")
+            Message.error(sender, "Usage: /actor play [animation]: run on actor you are looking at")
+            Message.error(sender, "Usage: /actor play [animation] [actor0] [actor1] ...: run on actor list")
             return
         }
 
@@ -621,60 +645,146 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
         // run on targets
         for ( actor in targets ) {
-            actor.playAnimation(animName, 1.0)
-            Message.print(sender, "Actor \"${actor.name}\" playing: ${animName}")
+            actor.animation.play(animName, 1.0)
+            Message.print(sender, "Actor \"${actor.name}\" playing: \"${animName}\"")
+        }
+    }
+
+    /**
+     * @command /actor stop [animation] [actor0] [actor1] ...
+     * Stop actor from playing animation from name `[animation]`.
+     * Unlike pause, this removes a specific animation from the actor.
+     */
+    private fun stopAnimation(sender: CommandSender, args: Array<String>) {
+        if ( args.size < 2 ) {
+            Message.error(sender, "Usage: /actor stop [animation]: run on actor you are looking at")
+            Message.error(sender, "Usage: /actor stop [animation] [actor0] [actor1] ...: run on actor list")
+            return
+        }
+        
+        // animation name
+        val animName = args[1]
+
+        // get actor targets
+        val targets = getActorTargets(sender, args, 2)
+
+        // run on targets
+        for ( actor in targets ) {
+            actor.animation.stop(animName)
+            Message.print(sender, "Actor \"${actor.name}\" stopped playing: \"${animName}\".")
+        }
+    }
+
+    /**
+     * @command /actor stopall [actor0] [actor1] ...
+     * Stop all actor animations. Unlike pause, this removes
+     * animations.
+     */
+    private fun stopAllAnimation(sender: CommandSender, args: Array<String>) {
+        // get actor targets
+        val targets = getActorTargets(sender, args, 1)
+
+        if ( targets.size < 1 ) {
+            Message.error(sender, "Usage: /actor stopall: run on actor you are looking at")
+            Message.error(sender, "Usage: /actor stopall [actor0] [actor1] ...: run on actor list")
+            return
+        }
+        
+        // run on targets
+        for ( actor in targets ) {
+            actor.animation.stopAll()
+            Message.print(sender, "Actor \"${actor.name}\" stopped all animations.")
         }
     }
 
     /**
      * @command /actor pause [actor0] [actor1] ...
-     * 
+     * Pause actor from playing all animations. This will not
+     * remove any animations, it will only stop animations
+     * from updating.
      */
     private fun pauseAnimation(sender: CommandSender, args: Array<String>) {
-        
-    }
-
-    /**
-     * @command /actor stop [actor0] [actor1] ...
-     * 
-     */
-    private fun stopAnimation(sender: CommandSender, args: Array<String>) {
-        if ( args.size < 2 ) {
-            Message.error(sender, "Usage: /actor stop [actor0] [actor1] ...")
-            return
-        }
-
         // get actor targets
         val targets = getActorTargets(sender, args, 1)
 
+        if ( targets.size < 1 ) {
+            Message.error(sender, "Usage: /actor pause: run on actor you are looking at")
+            Message.error(sender, "Usage: /actor pause [actor0] [actor1] ...: run on actor list")
+            return
+        }
+        
         // run on targets
         for ( actor in targets ) {
-
+            actor.animation.enable(false)
+            Message.print(sender, "Actor \"${actor.name}\" paused animations.")
         }
     }
 
     /**
      * @command /actor start [actor0] [actor1] ...
-     * 
+     * Start (unpause) actor animations. Use this after `/actor pause`
+     * to start animations again. 
      */
     private fun startAnimation(sender: CommandSender, args: Array<String>) {
-        
+        // get actor targets
+        val targets = getActorTargets(sender, args, 1)
+
+        if ( targets.size < 1 ) {
+            Message.error(sender, "Usage: /actor start: run on actor you are looking at")
+            Message.error(sender, "Usage: /actor start [actor0] [actor1] ...: run on actor list")
+            return
+        }
+
+        // run on targets
+        for ( actor in targets ) {
+            actor.animation.enable(true)
+            Message.print(sender, "Actor \"${actor.name}\" unpaused animations.")
+        }
     }
 
     /**
      * @command /actor step [actor0] [actor1] ...
-     * 
+     * Run single animation update step for actors.
+     * This works on paused actors, so you can view
+     * animations frame-by-frame.
      */
     private fun stepAnimation(sender: CommandSender, args: Array<String>) {
-        
+        // get actor targets
+        val targets = getActorTargets(sender, args, 1)
+
+        if ( targets.size < 1 ) {
+            Message.error(sender, "Usage: /actor step: run on actor you are looking at")
+            Message.error(sender, "Usage: /actor step [actor0] [actor1] ...: run on actor list")
+            return
+        }
+
+        // run on targets
+        for ( actor in targets ) {
+            actor.animation.update()
+            Message.print(sender, "Actor \"${actor.name}\" stepped animation by 1 tick.")
+        }
     }
 
     /**
-     * @command /actor reset [actor0] [actor1] ...
-     * 
+     * @command /actor restart [actor0] [actor1] ...
+     * Restart all animations from their initial frame.
+     * Use this to sync animations across multiple actors.
      */
     private fun restartAnimation(sender: CommandSender, args: Array<String>) {
-
+        // get actor targets
+        val targets = getActorTargets(sender, args, 1)
+        
+        if ( targets.size < 1 ) {
+            Message.error(sender, "Usage: /actor restart: run on actor you are looking at")
+            Message.error(sender, "Usage: /actor restart [actor0] [actor1] ...: run on actor list")
+            return
+        }
+        
+        // run on targets
+        for ( actor in targets ) {
+            actor.animation.restart()
+            Message.print(sender, "Actor \"${actor.name}\" restarted all animations.")
+        }
     }
     
 }
