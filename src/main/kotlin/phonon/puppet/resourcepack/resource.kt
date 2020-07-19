@@ -152,12 +152,12 @@ public object Resource {
 
             json.append("{\n  \"models\": [\n")
             for ( (i, s) in customModelData.withIndex() ) {
-                json.append("    \"${s}\"\n")
+                json.append("    \"${s}\"")
                 if ( i < customModelData.size - 1 ) {
-                    json.append(",")
+                    json.append(",\n")
                 }
             }
-            json.append("  ]\n}")
+            json.append("\n  ]\n}")
 
             writeStringToFile(json.toString(), outputPath)
         }

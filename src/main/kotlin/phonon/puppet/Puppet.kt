@@ -28,7 +28,7 @@ public object Puppet {
     public val version: String = "0.0.0"
 
     // minecraft plugin variables
-    internal var plugin: JavaPlugin? = null
+    internal var plugin: PuppetPlugin? = null
     internal var logger: Logger? = null
 
     // engine
@@ -53,7 +53,7 @@ public object Puppet {
 
     // initialization:
     // - set links to plugin variables
-    public fun initialize(plugin: JavaPlugin) {
+    public fun initialize(plugin: PuppetPlugin) {
         Puppet.plugin = plugin
         Puppet.logger = plugin.getLogger()
         Puppet.loadResources(false)

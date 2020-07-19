@@ -1,3 +1,48 @@
-# ===========================================
-# Puppet Config
-# ===========================================
+# ========================================
+# Ingame settings
+# ========================================
+
+# automatically start rendering engine when plugin loads
+autoStartEngine: true
+
+# make model armorstands invincible (with event listener)
+makeModelsInvulnerable: true
+
+# ========================================
+# Path settings
+# ========================================
+
+# main plugin directory for config, saves, data, etc.. 
+pathPlugin: plugins/puppet
+
+# directory for individual model .json data: pathPlugin + pathModels
+pathModels: data
+
+# file path for custom model data list: pathModels + pathCustomModelData
+pathCustomModelData: models.json
+
+# directory for generating resourcepack: pathPlugin + pathResourcePack
+pathResourcePack: resourcepack
+
+# path for custom resource pack icon: pathResourcePack  + pathResourcePackIcon
+# if not provided, not pack item will appear
+pathResourcePackIcon: pack.png
+
+# path for custom resource pack pack.mcmeta: pathResourcePack  + pathResourcePackMeta
+# if not provided, default pack.mcmeta will be written
+pathResourcePackMeta: pack.mcmeta
+
+# Path for custom resource pack item override: pathResourcePack  + pathResourcePackOverrideItem
+# This is the item that will be used to display custom models (must be same as modelItem)
+# 
+# If not provided, default .json text will be written:
+#     "parent": "item/handheld",
+#     "textures": {
+#         "layer0": "item/MATERIAL_NAME"
+#     },
+#     "display": {},
+modelItem: bone
+pathResourcePackOverrideItem: bone.json
+
+# name for server generated resourcepack
+resourcePackName: puppet_resourcepack.zip

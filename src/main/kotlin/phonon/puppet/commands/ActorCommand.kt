@@ -335,7 +335,8 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
     /**
      * @command /actor kill [actor0] [actor1] ...
-     * Remove actor from list or from what player is looking at.
+     * Remove actor. Will remove actors from list of names,
+     * or the actor the player is looking at.
      */
     private fun killActor(sender: CommandSender, args: Array<String>) {
 
@@ -396,7 +397,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
     /**
      * @command /actor reset [actor0] [actor1] ...
-     * Reset actor rotation and all bone poses
+     * Reset actor rotation and all bone poses.
      */
     private fun resetActorPose(sender: CommandSender, args: Array<String>) {
         // get actor targets
@@ -423,7 +424,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
     /**
      * @command /actor move [x] [y] [z] [actor0] [actor1] ...
-     * Move actor by (x, y, z) relative to its current location.
+     * Move actors by (x, y, z) relative to its current location.
      */
     private fun moveActor(sender: CommandSender, args: Array<String>) {
         if ( args.size < 4 ) {
@@ -550,6 +551,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
             val actor = targets[0]
             Puppet.playerPosingActor.put(player, actor)
             Message.print(sender, "Posing actor \"${actor.name}\" by player movement")
+            Message.print(sender, "(Type \"/actor pose\" again to stop posing)")
         }
         else {
             Message.error(sender, "Usage: /actor pose [actor0] [actor1] ...")

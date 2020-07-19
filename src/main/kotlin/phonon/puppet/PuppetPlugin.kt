@@ -28,20 +28,17 @@ public class PuppetPlugin : JavaPlugin() {
 
         val logger = this.getLogger()
 
-        // get config file
-        val configPath = File(getDataFolder().getPath(), "config.yml")
-        if ( !configPath.exists() ) {
-            logger.info("No config found: generating default config.yml")
-            this.saveDefaultConfig()
-        }
-        val config = this.getConfig()
-        if ( config !== null ) {
-            Config.load(config)
-        }
+        // load config.yml settings
+        this.loadConfig()
 
         // initialize puppet: will load resources + generate resource pack
         Puppet.initialize(this)
         
+        // start rendering engine
+        if ( Config.autoStartEngine ) {
+            Puppet.startEngine()
+        }
+
         // register listeners
         val pm = this.getServer().getPluginManager()
         pm.registerEvents(EntityDamageListener(), this)
@@ -50,7 +47,7 @@ public class PuppetPlugin : JavaPlugin() {
         // register commands
         this.getCommand("actor")?.setExecutor(ActorCommand())
         this.getCommand("puppet")?.setExecutor(PuppetCommand())
-
+        
         // print data loaded
         logger.info("Loaded:")
         logger.info("- Models: ${Mesh.library.size}")
@@ -68,5 +65,23 @@ public class PuppetPlugin : JavaPlugin() {
 
     override fun onDisable() {
         logger.info("wtf i hate puppet now")
+    }
+
+    /**
+     * Load config, or create new config file if it does not exist
+     */
+    public fun loadConfig() {
+        val logger = this.getLogger()
+
+        // get config file
+        val configPath = File(this.getDataFolder().getPath(), "config.yml")
+        if ( !configPath.exists() ) {
+            logger.info("No config found: generating default config.yml")
+            this.saveDefaultConfig()
+        }
+        val config = this.getConfig()
+        if ( config !== null ) {
+            Config.load(config)
+        }
     }
 }

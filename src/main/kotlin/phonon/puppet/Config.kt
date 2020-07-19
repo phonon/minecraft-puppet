@@ -14,6 +14,19 @@ import org.bukkit.Material
 public object Config {
 
     // ========================================
+    // Ingame settings
+    // ========================================
+    
+    // automatically start rendering engine when plugin loads
+    public var autoStartEngine: Boolean = true
+
+    // item type to use for custom models metadata
+    public var modelItem: Material = Material.BONE
+
+    // make model armorstands invincible (with event listener)
+    public var makeModelsInvulnerable: Boolean = true
+
+    // ========================================
     // Path settings
     // ========================================
 
@@ -51,25 +64,25 @@ public object Config {
     // name for server generated resourcepack
     public var resourcePackName = "puppet_resourcepack.zip"
     
-    // ========================================
-    // Ingame settings
-    // ========================================
-    
-    // automatically start rendering engine when plugin loads
-    public var autoStartEngine: Boolean = true
 
-    // item type to use for custom models metadata
-    public var modelItem: Material = Material.BONE
-
-    // make model armorstands invincible (with event listener)
-    public var makeModelsInvulnerable: Boolean = true
-
-    
     /**
      * Load config from config.yml file
      */
     public fun load(config: FileConfiguration) {
+        // ingame settings
+        Config.autoStartEngine = config.getBoolean("autoStartEngine", Config.autoStartEngine)
+        Config.modelItem = Material.matchMaterial(config.getString("modelItem", "")!!) ?: Config.modelItem
+        Config.makeModelsInvulnerable = config.getBoolean("makeModelsInvulnerable", Config.makeModelsInvulnerable)
         
+        // path settings
+        Config.pathPlugin = config.getString("pathPlugin", Config.pathPlugin)!!
+        Config.pathModels = config.getString("pathModels", Config.pathModels)!!
+        Config.pathCustomModelData = config.getString("pathCustomModelData", Config.pathCustomModelData)!!
+        Config.pathResourcePack = config.getString("pathResourcePack", Config.pathResourcePack)!!
+        Config.pathResourcePackIcon = config.getString("pathResourcePackIcon", Config.pathResourcePackIcon)!!
+        Config.pathResourcePackMeta = config.getString("pathResourcePackMeta", Config.pathResourcePackMeta)!!
+        Config.pathResourcePackOverrideItem = config.getString("pathResourcePackOverrideItem", Config.pathResourcePackOverrideItem)!!
+        Config.resourcePackName = config.getString("resourcePackName", Config.resourcePackName)!!
     }
     
 }

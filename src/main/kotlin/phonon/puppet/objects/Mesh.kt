@@ -17,6 +17,7 @@ import org.bukkit.Material
 import org.bukkit.entity.ArmorStand
 import org.bukkit.inventory.ItemStack
 import phonon.puppet.Puppet
+import phonon.puppet.Config
 import phonon.puppet.Message
 import phonon.puppet.math.*
 
@@ -31,8 +32,6 @@ const val MODEL_SCALE: Float = 0.0390625f
 // fixed vertical offset for armor stand location
 const val MODEL_VERTICAL_OFFSET: Float = 1.43f
 
-// material used for custom models
-val MATERIAL_CUSTOM_MODEL = Material.BONE
 
 public class Mesh(
     val name: String,
@@ -106,7 +105,7 @@ public class Mesh(
         stand.setVisible(false) // todo when ready
         
         // set armor stand initial model
-        val itemStack = ItemStack(MATERIAL_CUSTOM_MODEL, 1)
+        val itemStack = ItemStack(Config.modelItem, 1)
         val meta = itemStack.getItemMeta()!!
         meta.setCustomModelData(this.customModelData)
         itemStack.setItemMeta(meta)

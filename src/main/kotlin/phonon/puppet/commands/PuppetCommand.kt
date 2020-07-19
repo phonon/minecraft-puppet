@@ -22,7 +22,8 @@ import phonon.puppet.utils.filterByStart
 private val SUBCOMMANDS: List<String> = listOf(
     "help",
     "reload",
-    "engine"
+    "engine",
+    "killall"
 )
 
 // /puppet engine [subcommand]
@@ -49,6 +50,7 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
             "help" -> printHelp(sender)
             "reload" -> reload(sender)
             "engine" -> manageEngine(sender, args)
+            "killall" -> killAllActors(sender, args)
             else -> { Message.error(sender, "Invalid command, use \"/puppet help\"") }
         }
 
@@ -98,12 +100,16 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
 
     /**
      * @command /puppet reload
-     * Reloads plugin and re-creates resourcepack.
+     * Reloads plugin and re-creates resource pack.
      * Will add any new resources to engine.
      */
     private fun reload(sender: CommandSender) {
         Message.print(sender, "[Puppet] Reloading resources and creating resource pack...")
         
+        // reload config
+        Puppet.plugin?.loadConfig()
+
+        // reload resources + regenerate resource pack
         Puppet.loadResources()
 
         Message.print(sender, "- Models: ${Mesh.library.size}")
@@ -143,4 +149,14 @@ public class PuppetCommand : CommandExecutor, TabCompleter {
         }
     }
     
+    /**
+     * @command /puppet killall
+     * Kills all actors, same as `/actor killall`, but only requires
+     * `/puppet` command permission node instead of operator.
+     */
+    private fun killAllActors(sender: CommandSender, args: Array<String>) {
+        Puppet.destroyAllActors()
+        Message.print(sender, "Destroyed all actors")
+    }
+
 }
