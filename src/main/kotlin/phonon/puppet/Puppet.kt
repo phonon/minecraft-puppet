@@ -353,8 +353,8 @@ public object Puppet {
      * @param obj object in a transform graph
      * @param visible true to set ArmorStands visible
      */
-    public fun toggleArmorStands(obj: TransformGraphNode, visible: Boolean) {
-        obj.traverse({
+    public fun toggleArmorStands(root: TransformGraphNode, visible: Boolean) {
+        root.traverse({ obj ->
             if ( obj is Mesh ) {
                 obj.armorStand.setVisible(visible)
             }

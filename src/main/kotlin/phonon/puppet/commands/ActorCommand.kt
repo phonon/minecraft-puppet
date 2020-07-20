@@ -411,6 +411,9 @@ public class ActorCommand : CommandExecutor, TabCompleter {
 
         // run on targets
         for ( actor in targets ) {
+            // reset rotation
+            actor.setRotation(0.0, 0.0, 0.0)
+
             val skeleton = actor.skeleton
             if ( skeleton !== null ) {
                 skeleton.reset()
@@ -681,7 +684,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
     /**
      * @command /actor stopall [actor0] [actor1] ...
      * Stop all actor animations. Unlike pause, this removes
-     * animations.
+     * all animations from the actor.
      */
     private fun stopAllAnimation(sender: CommandSender, args: Array<String>) {
         // get actor targets
@@ -834,7 +837,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
      * actor skeleton.
      */
     private fun printBoneInfo(sender: CommandSender, args: Array<String>) {
-        if ( args.size < 3 ) {
+        if ( args.size < 4 ) {
             Message.error(sender, "Usage: /actor bone info [actor] [bone]")
             return
         }
@@ -864,7 +867,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
      * order is ZYX.
      */
     private fun setBoneRotation(sender: CommandSender, args: Array<String>) {
-        if ( args.size < 3 ) {
+        if ( args.size < 4 ) {
             Message.error(sender, "Usage: /actor bone rotate [actor] [bone] [x] [y] [z]")
             return
         }
@@ -915,7 +918,7 @@ public class ActorCommand : CommandExecutor, TabCompleter {
      * to input (x, y, z).
      */
     public fun setBonePosition(sender: CommandSender, args: Array<String>) {
-        if ( args.size < 3 ) {
+        if ( args.size < 4 ) {
             Message.error(sender, "Usage: /actor bone position [actor] [bone] [x] [y] [z]")
             return
         }

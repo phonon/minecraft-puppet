@@ -85,6 +85,7 @@ Unlike pause, this removes a specific animation from the actor.
 
 ### `/actor stopall [actor0] [actor1] ...`
 Stop all actor animations. Unlike pause, this removes
+all animations from the actor.
 
 ### `/actor pause [actor0] [actor1] ...`
 Pause actor from playing all animations. This will not

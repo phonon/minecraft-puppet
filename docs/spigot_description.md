@@ -15,15 +15,13 @@ any actors created in the game. It also does not allow any
 interaction with actors or between actors. It's mainly intended
 to be an animation backend for other plugins.
 
-See `docs/` folder or wiki for Spigot plugin usage.
-
 Below is an overview of the system integrated with the
 Blender exporter:
-![Puppet Bone Armor Stand System](docs/images/puppet_system.svg)
+![Puppet Bone Armor Stand System](images/puppet_system.svg)
 
 
-Blender Exporter and Usage
-------------------------
+Blender Exporter and Basic Usage
+----------------------------------
 **Blender Minecraft .json exporter:** https://github.com/phonon/blender-minecraft-json
 
 Be sure to read the installation and export guides in the addon readme.
@@ -50,29 +48,3 @@ for the model in this folder as well.
 6. When the plugin runs, it will automatically generate a resource pack
 needed for clients to view the custom models. This will be built into
 the folder `plugins/puppet/resourcepack/puppet_resourcepack.zip`.
-
-See `docs/usage.md` or the wiki for more details.
-
-
-Development Requirements
-------------------------
-1. **Kotlin v1.3** - plugin language
-2. **Gradle v6.0** - build system
-3. **Python (optional)** - for generating some documentation files
-
-
-Build
-------------------------
-**Windows**:
-
-Development snapshots:  
-`./gradlew.bat build`
-
-Release build:  
-`./gradlew.bat release`
-
-The built `.jar` will be located in `build\libs` as either
-`puppet-0.0.0-SNAPSHOT.jar` (dev) or `puppet-0.0.0.jar` (release).
-The smaller sized files beginning with `phonon-puppet-...` are before
-shading in gson and kotlin runtime dependencies. Use these if you want
-to separately load dependencies (see dependencies in `build.gradle.kts`).
