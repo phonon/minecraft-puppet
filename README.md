@@ -22,9 +22,18 @@ Blender exporter:
 ![Puppet Bone Armor Stand System](docs/images/puppet_system.svg)
 
 
+Commands
+----------------------------------
+See wiki for details
+- `/actor`: Main command for manipulating objects (permissions: **puppet.command.actor**)
+- `/puppet`: Engine commands (reload, start/stop, etc...) (permissions: **puppet.command.puppet**)
+
+
 Blender Exporter and Usage
 ------------------------
 **Blender Minecraft .json exporter:** https://github.com/phonon/blender-minecraft-json
+
+**An example model with bones/animations is included in `example/`.**
 
 Be sure to read the installation and export guides in the addon readme.
 Custom models used with this plugin follow all the same 

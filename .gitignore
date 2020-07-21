@@ -17,3 +17,6 @@ lib/*.jar
 scripts/resourcepack/build
 scripts/resourcepack/models/*
 !scripts/resourcepack/models/.gitkeep
+
+# ignore blender backups
+*.blend[0-9]

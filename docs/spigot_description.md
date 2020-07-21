@@ -1,15 +1,24 @@
-Puppet: Minecraft Armor Stand Animation Engine
+Puppet: Armor Stand Animation Engine
 ========================
-Puppet is a vanilla Minecraft animation engine plugin for Spigot
-servers. This plugin renders Blender skeletal animations with
-vanilla .json models controlled by Armor Stands.
+Puppet is a vanilla Minecraft animation engine plugin that
+renders Blender skeletal animations with vanilla .json models
+controlled by Armor Stands.
 
+Below is a demonstration video comparing ingame model with Blender.
+The "glitching" with the model in game is due to client side
+interpolation, which is mostly unavoidable:
+
+https://youtu.be/rEhW8e28OxM
+
+
+Plugin Overview
+----------------------------------
 Puppet adds animatable objects called **actors** to the world.
 The `/actor` command can be used to create and manipulate
 these objects. You can create actors, move them around, change
 their pose, and play/pause animations.
 
-This plugin is minimalistic. It's purely the animation engine
+This plugin itself is minimalistic. It's purely the animation engine
 and basic commands for manipulating actors. It does not save/load
 any actors created in the game. It also does not allow any
 interaction with actors or between actors. It's mainly intended
@@ -20,15 +29,25 @@ Blender exporter:
 ![Puppet Bone Armor Stand System](images/puppet_system.svg)
 
 
+Commands
+----------------------------------
+- `/actor`: Main command for manipulating objects (permissions: **puppet.command.actor**)
+- `/puppet`: Engine commands (reload, start/stop, etc...) (permissions: **puppet.command.puppet**)
+
+[See wiki for detailed list](https://github.com/phonon/minecraft-puppet/wiki/Commands)
+
+
 Blender Exporter and Basic Usage
 ----------------------------------
 **Blender Minecraft .json exporter:** https://github.com/phonon/blender-minecraft-json
 
-Be sure to read the installation and export guides in the addon readme.
-Custom models used with this plugin follow all the same 
-restrictions as vanilla .json models. The basic steps for creating,
-exporting, and adding custom models to the Puppet engine on a server
-is as follows:
+**An example model is provided in this plugin's github repo.**
+
+Be sure to read the installation and export guides in the Blender
+addon readme. Custom models used with this plugin must follow all
+the same  restrictions as vanilla .json models. The basic steps for
+creating, exporting, and adding custom models to the Puppet engine on
+a server:
 
 1. Create model in Blender (follow all Minecraft .json restrictions).
 2. Create an armature (skeleton) and assign all objects in the

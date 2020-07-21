@@ -1,6 +1,6 @@
 main: phonon.puppet.PuppetPlugin
 name: puppet
-version: 0.0.0
+version: 0.1.0
 softdepend: []
 commands:
   puppet:

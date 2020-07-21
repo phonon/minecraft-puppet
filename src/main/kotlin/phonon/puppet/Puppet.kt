@@ -25,7 +25,7 @@ import phonon.puppet.resourcepack.Resource
 public object Puppet {
 
     // version
-    public val version: String = "0.0.0"
+    public val version: String = "0.1.0"
 
     // minecraft plugin variables
     internal var plugin: PuppetPlugin? = null

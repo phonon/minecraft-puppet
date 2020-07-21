@@ -9,7 +9,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 // global build settings
 object Settings {
-    val VERSION = "0.0.0"
+    val VERSION = "0.1.0"
     val BASE_NAME = "puppet"
 }
 
