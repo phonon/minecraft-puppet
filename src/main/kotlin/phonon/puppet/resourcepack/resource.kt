@@ -326,11 +326,10 @@ public object Resource {
                 // get texture file path
                 try {
                     val texturePaths: List<Path> = readModelTextures(modelPart)
-
+                    
                     // match with texture files in directory
                     for ( texture in texturePaths ) {
-                        val textureName = removeFileExtension(texture.getName(texture.getNameCount()-1).toString())
-
+                        val textureName = texture.getName(texture.getNameCount()-1).toString()
                         val pathTextureIn = textures.get(textureName)
                         if ( pathTextureIn !== null ) {
                             // output path components:
