@@ -9,13 +9,14 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 // global build settings
 object Settings {
-    val VERSION = "0.1.0"
+    val JVM = "16"
+    val VERSION = "0.1.1"
     val BASE_NAME = "puppet"
 }
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.3.41"
+    id("org.jetbrains.kotlin.jvm") version "1.5.20"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     maven
 
@@ -53,8 +54,14 @@ dependencies {
     compileOnly("com.google.code.gson:gson:2.8.6")
 
     // paper mc 1.15
-    implementation("com.destroystokyo.paper:paper-api:1.15.2-R0.1-SNAPSHOT")
+    // implementation("com.destroystokyo.paper:paper-api:1.15.2-R0.1-SNAPSHOT")
 
+    // paper 1.17
+    // implementation("io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT")
+    
+    // paper 1.18.2
+    implementation("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
+    
     // Use the Kotlin test library.
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 
@@ -68,7 +75,7 @@ application {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = Settings.JVM
     kotlinOptions.freeCompilerArgs = listOf("-Xallow-result-return-type")
 }
 
@@ -77,8 +84,8 @@ tasks {
         baseName = Settings.BASE_NAME
         classifier = ""
         configurations = mutableListOf(project.configurations.named("compileOnly").get())
-        relocate("com.google", "shadow.gson")
-        minimize()
+        // relocate("com.google", "shadow.gson")
+        // minimize()
     }
 
     build {

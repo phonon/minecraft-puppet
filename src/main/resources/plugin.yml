@@ -1,7 +1,7 @@
 main: phonon.puppet.PuppetPlugin
 name: puppet
-version: 0.1.0
-softdepend: []
+version: 0.1.1
+softdepend: [kotlin]
 commands:
   puppet:
     description: Manage puppet

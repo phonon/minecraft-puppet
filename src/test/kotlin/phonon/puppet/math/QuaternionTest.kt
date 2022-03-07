@@ -11,15 +11,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import phonon.puppet.math.*
 
-// needed to handle floating point rounding errors
-private fun assertRoughlyEqual(a: Float, b: Float, epsilon: Double, message: String? = null) {
-    assertTrue(Math.abs(a.toDouble() - b.toDouble()) < epsilon, message)
-}
-
-private val PI_2: Float = (Math.PI / 2.0).toFloat()
-private val PI_4: Float = (Math.PI / 4.0).toFloat()
 
 public class QuaternionTest {
+    
+    // needed to handle floating point rounding errors
+    private fun assertRoughlyEqual(a: Float, b: Float, epsilon: Double, message: String? = null) {
+        assertTrue(Math.abs(a.toDouble() - b.toDouble()) < epsilon, message)
+    }
+
+    private val PI_2: Float = (Math.PI / 2.0).toFloat()
+    private val PI_4: Float = (Math.PI / 4.0).toFloat()
 
     @Test
     fun convertMatrixAndBack1() {

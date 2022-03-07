@@ -8,6 +8,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertEquals
 
 // todo?
-public class PuppetTest {
+// public class PuppetTest {
     
-}
+// }
